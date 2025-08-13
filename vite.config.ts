@@ -9,8 +9,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
-  server: {
-    // se o overlay estiver te atrapalhando:
-    // hmr: { overlay: true }
-  },
 })
