@@ -1,94 +1,27 @@
-import React from 'react';
-import { Star, ArrowRight, BookOpen, Heart } from 'lucide-react'; // De Cross para Heart
+import { ShoppingCart } from 'lucide-react'
+import type { Product } from '../types'
 
-interface ProductCardProps {
-  id: number;
-  title: string;
-  subtitle: string;
-  price: string;
-  originalPrice?: string;
-  image: string;
-  rating: number;
-  reviews: number;
-  type: 'Livro' | 'Devocional' | 'Ebook' | 'Bíblia' | 'Box' | 'Kit' | 'Acessório'; // Tipos de produto expandidos
-  badge?: string;
-}
-
-const ProductCard: React.FC<ProductCardProps> = ({
-  title,
-  subtitle,
-  price,
-  originalPrice,
-  image,
-  rating,
-  reviews,
-  type,
-  badge,
-}) => {
-  const getBadgeColor = (badgeText?: string) => {
-    switch (badgeText) {
-      case 'Lançamento':
-        return 'bg-indigo-100 text-indigo-800'; // De purple para indigo
-      case 'Mais Vendido':
-        return 'bg-amber-100 text-amber-800'; // De red para amber
-      case 'Economia':
-        return 'bg-green-100 text-green-800';
-      case 'Completo':
-        return 'bg-orange-100 text-orange-800'; // Novo badge
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
+export default function ProductCard({ product, onAdd }: { product: Product, onAdd?: (p: Product)=>void }) {
   return (
-    <div className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden border-2 border-transparent hover:border-amber-200"> {/* De hover:border-red-200 para hover:border-amber-200 */}
-      <div className="relative">
-        <img
-          src={image}
-          alt={`Capa do ${type}: ${title}`}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        {badge && (
-          <div className="absolute top-4 left-4">
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getBadgeColor(badge)}`}>
-              {badge}
-            </span>
-          </div>
-        )}
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full p-2">
-          <BookOpen className="h-5 w-5 text-amber-700" aria-hidden="true" /> {/* De text-red-700 para text-amber-700 */}
-        </div>
+    <div className="group rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 hover:shadow-md transition">
+      <div className="aspect-square w-full overflow-hidden rounded-xl bg-slate-100">
+        <img src={product.image} alt={product.title} className="h-full w-full object-cover group-hover:scale-[1.02] transition"/>
       </div>
-
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-1">
-            <Star className="h-4 w-4 text-yellow-400 fill-current" aria-hidden="true" />
-            <span className="text-sm text-gray-600">{rating}</span>
-            <span className="text-sm text-gray-400">({reviews})</span>
-          </div>
-          <span className="text-sm text-amber-700 font-medium">{type}</span> {/* De text-red-700 para text-amber-700 */}
-        </div>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600 mb-4">{subtitle}</p>
-
-        <div className="flex items-baseline justify-center mb-6">
-          <span className="text-3xl font-bold text-gray-900">{price}</span>
-          {originalPrice && (
-            <span className="text-sm text-gray-500 line-through ml-2">{originalPrice}</span>
+      <div className="mt-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold leading-tight line-clamp-2">{product.title}</h3>
+          {product.badge && (
+            <span className="ml-2 shrink-0 rounded-full bg-pink-100 text-pink-800 text-[10px] font-semibold px-2 py-0.5">{product.badge}</span>
           )}
         </div>
-
-        <button className="w-full bg-amber-700 text-white py-3 rounded-lg hover:bg-amber-800 transition-colors flex items-center justify-center space-x-2 group"
-                aria-label={`Ver detalhes do ${type} ${title}`}>
-          <Heart className="h-4 w-4" aria-hidden="true" /> {/* De Cross para Heart */}
-          <span>Ver Detalhes</span>
-          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
-        </button>
+        <p className="mt-1 text-xs text-slate-600">{product.category} • {product.ageRange}</p>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="font-bold">R$ {product.price.toFixed(2)}</span>
+          <button onClick={()=>onAdd?.(product)} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-white text-sm font-medium">
+            <ShoppingCart className="h-4 w-4"/> Comprar
+          </button>
+        </div>
       </div>
     </div>
-  );
-};
-
-export default ProductCard;
+  )
+}

@@ -1,62 +1,84 @@
-import React from 'react';
-import TestimonialCard from './TestimonialCard'; // Certifique-se que este arquivo existe
+// src/sections/Testimonials.tsx
+import TestimonialCard from '../components/TestimonialCard';
 
-const Testimonials: React.FC = () => {
-  const testimonials = [
+type Testimonial = {
+  id: number;
+  name: string;
+  role: string;
+  avatar: string;
+  content: string;
+  rating: number;
+  product: string;
+};
+
+export default function Testimonials() {
+  const testimonials: Testimonial[] = [
     {
       id: 1,
       name: 'Maria Silva',
       role: 'Membro da Igreja',
-      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-      content: 'Os livros do Alexandre transformaram completamente minha vida espiritual. Encontrei propósito em Cristo e hoje vivo uma vida abundante no Senhor.',
+      avatar:
+        'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
+      content:
+        'Os livros do Alexandre transformaram completamente minha vida espiritual. Encontrei propósito em Cristo e hoje vivo uma vida abundante no Senhor.',
       rating: 5,
-      product: 'Livro: Caminhada com Cristo'
+      product: 'Livro: Caminhada com Cristo',
     },
     {
       id: 2,
       name: 'Carlos Oliveira',
       role: 'Líder de Célula',
-      avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-      content: 'A mentoria espiritual foi um divisor de águas na minha caminhada cristã. Hoje lidero uma célula e vejo Deus agindo poderosamente através do ministério.',
+      avatar:
+        'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
+      content:
+        'A mentoria espiritual foi um divisor de águas na minha caminhada cristã. Hoje lidero uma célula e vejo Deus agindo poderosamente através do ministério.',
       rating: 5,
-      product: 'Mentoria Espiritual'
+      product: 'Mentoria Espiritual',
     },
     {
       id: 3,
       name: 'Ana Santos',
       role: 'Missionária',
-      avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-      content: 'O curso Fundamentos da Fé me deu base sólida na Palavra. Hoje sirvo como missionária e vejo vidas sendo transformadas pelo poder do Evangelho.',
+      avatar:
+        'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
+      content:
+        'O curso Fundamentos da Fé me deu base sólida na Palavra. Hoje sirvo como missionária e vejo vidas sendo transformadas pelo poder do Evangelho.',
       rating: 5,
-      product: 'Curso: Fundamentos da Fé'
+      product: 'Curso: Fundamentos da Fé',
     },
     {
       id: 4,
       name: 'Pedro Costa',
       role: 'Diácono',
-      avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-      content: 'O livro Oração que Transforma revolucionou minha vida de oração. Agora experimento milagres diários e vejo Deus respondendo de forma sobrenatural.',
+      avatar:
+        'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
+      content:
+        'O livro Oração que Transforma revolucionou minha vida de oração. Agora experimento milagres diários e vejo Deus respondendo de forma sobrenatural.',
       rating: 5,
-      product: 'Livro: Oração que Transforma'
+      product: 'Livro: Oração que Transforma',
     },
     {
       id: 5,
       name: 'Beatriz Ferreira',
       role: 'Líder de Louvor',
-      avatar: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-      content: 'A Comunidade de Fé foi incrível! Cresci espiritualmente junto com outros irmãos e hoje lidero o ministério de louvor da nossa igreja.',
+      avatar:
+        'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
+      content:
+        'A Comunidade de Fé foi incrível! Cresci espiritualmente junto com outros irmãos e hoje lidero o ministério de louvor da nossa igreja.',
       rating: 5,
-      product: 'Comunidade de Fé'
+      product: 'Comunidade de Fé',
     },
     {
       id: 6,
       name: 'Roberto Lima',
       role: 'Pastor Auxiliar',
-      avatar: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-      content: 'O curso Liderança Cristã me capacitou para servir no ministério pastoral. Hoje pastoreio uma congregação e vejo o Reino de Deus se expandindo.',
+      avatar:
+        'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
+      content:
+        'O curso Liderança Cristã me capacitou para servir no ministério pastoral. Hoje pastoreio uma congregação e vejo o Reino de Deus se expandindo.',
       rating: 5,
-      product: 'Curso: Liderança Cristã'
-    }
+      product: 'Curso: Liderança Cristã',
+    },
   ];
 
   return (
@@ -79,6 +101,4 @@ const Testimonials: React.FC = () => {
       </div>
     </section>
   );
-};
-
-export default Testimonials;
+}

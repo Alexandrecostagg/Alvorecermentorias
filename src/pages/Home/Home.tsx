@@ -1,8 +1,8 @@
-import React from 'react';
+// src/pages/Home/Home.tsx
 import Hero from '../../sections/Hero';
 import About from '../../sections/About';
 import CoursesSection from '../../sections/CoursesSection';
-import Mentoring from '../Mentoring/MentoringPage';
+import MentoringPage from '../Mentoring/MentoringPage';
 import BoxKitsSection from '../../sections/BoxKitsSection';
 import Testimonials from '../../sections/Testimonials';
 import Contact from '../../sections/Contact';
@@ -13,7 +13,7 @@ export default function Home() {
       <Hero />
       <About />
       <CoursesSection />
-      <Mentoring />
+      <MentoringPage />
       <BoxKitsSection />
       <Testimonials />
       <Contact />

@@ -1,7 +1,7 @@
-import React from 'react';
-import { BookOpen, Video, Users, Star, ArrowRight, Cross, Heart, Zap } from 'lucide-react';
+// src/components/Resources.tsx
+import { BookOpen, Video, Users, Star, ArrowRight, Cross } from 'lucide-react';
 
-const Resources: React.FC = () => {
+export default function Resources() {
   const products = [
     {
       id: 1,
@@ -14,7 +14,7 @@ const Resources: React.FC = () => {
       rating: 4.9,
       reviews: 847,
       icon: BookOpen,
-      badge: 'Mais Amado'
+      badge: 'Mais Amado',
     },
     {
       id: 2,
@@ -27,7 +27,7 @@ const Resources: React.FC = () => {
       rating: 4.8,
       reviews: 592,
       icon: Video,
-      badge: 'Essencial'
+      badge: 'Essencial',
     },
     {
       id: 3,
@@ -40,7 +40,7 @@ const Resources: React.FC = () => {
       rating: 5.0,
       reviews: 89,
       icon: Users,
-      badge: 'Transformador'
+      badge: 'Transformador',
     },
     {
       id: 4,
@@ -53,7 +53,7 @@ const Resources: React.FC = () => {
       rating: 4.7,
       reviews: 1256,
       icon: BookOpen,
-      badge: 'Poderoso'
+      badge: 'Poderoso',
     },
     {
       id: 5,
@@ -66,7 +66,7 @@ const Resources: React.FC = () => {
       rating: 4.6,
       reviews: 443,
       icon: Video,
-      badge: 'Inspirador'
+      badge: 'Inspirador',
     },
     {
       id: 6,
@@ -79,8 +79,8 @@ const Resources: React.FC = () => {
       rating: 4.9,
       reviews: 234,
       icon: Users,
-      badge: 'Comunhão'
-    }
+      badge: 'Comunhão',
+    },
   ];
 
   const getBadgeColor = (badge: string) => {
@@ -118,15 +118,20 @@ const Resources: React.FC = () => {
           {products.map((product) => {
             const IconComponent = product.icon;
             return (
-              <div key={product.id} className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+              <div
+                key={product.id}
+                className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden"
+              >
                 <div className="relative">
-                  <img 
-                    src={product.image} 
+                  <img
+                    src={product.image}
                     alt={product.title}
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute top-4 left-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getBadgeColor(product.badge)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getBadgeColor(product.badge)}`}
+                    >
                       {product.badge}
                     </span>
                   </div>
@@ -134,7 +139,7 @@ const Resources: React.FC = () => {
                     <IconComponent className="h-5 w-5 text-red-700" />
                   </div>
                 </div>
-                
+
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-red-700">{product.type}</span>
@@ -144,18 +149,20 @@ const Resources: React.FC = () => {
                       <span className="text-sm text-gray-400">({product.reviews})</span>
                     </div>
                   </div>
-                  
+
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{product.title}</h3>
                   <p className="text-gray-600 mb-4">{product.subtitle}</p>
-                  
+
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
                       <span className="text-2xl font-bold text-gray-900">{product.price}</span>
                       <span className="text-sm text-gray-500 line-through">{product.originalPrice}</span>
                     </div>
                   </div>
-                  
-                  <button className="w-full bg-red-700 text-white py-3 rounded-lg hover:bg-red-800 transition-colors flex items-center justify-center space-x-2 group">
+
+                  <button
+                    className="w-full bg-red-700 text-white py-3 rounded-lg hover:bg-red-800 transition-colors flex items-center justify-center space-x-2 group"
+                  >
                     <Cross className="h-4 w-4" />
                     <span>Adquirir Agora</span>
                     <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -168,6 +175,4 @@ const Resources: React.FC = () => {
       </div>
     </section>
   );
-};
-
-export default Resources;
+}
