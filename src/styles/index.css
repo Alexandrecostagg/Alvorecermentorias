@@ -1,3 +1,40 @@
+/* src/styles/index.css */
+
+/* Tailwind layers */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------- Globais opcionais ---------- */
+:root {
+  --bg: 248 250 252; /* slate-50 */
+  --fg: 15 23 42;    /* slate-900 */
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Suaviza rolagem e remove “tap highlight” no iOS */
+html { scroll-behavior: smooth; }
+* { -webkit-tap-highlight-color: transparent; }
+
+/* ---------- Exemplos de utilitários em layer ---------- */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-medium;
+  }
+  .btn-primary {
+    @apply btn bg-alvorecer-gold text-slate-900 font-bold hover:bg-alvorecer-gold/90 shadow-md;
+  }
+  .card {
+    @apply rounded-2xl bg-white shadow-sm ring-1 ring-slate-200;
+  }
+}

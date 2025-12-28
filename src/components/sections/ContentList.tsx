@@ -1,42 +1,49 @@
-type Item = {
-  id: string;
-  title: string;
-  excerpt: string;
-  category: "Estudos" | "Notícias" | "Eventos" | "Lançamentos";
-  date?: string;
-};
+import { BookOpenText, PlayCircle, FileText } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
-const MOCK: Item[] = [
-  { id: "1", title: "A beleza da unidade (Sl 133)", excerpt: "Reflexões sobre a comunhão dos santos.", category: "Estudos", date: "2025-07-20" },
-  { id: "2", title: "Conferência Regional 2025", excerpt: "Veja as datas e cidades participantes.", category: "Eventos", date: "2025-09-05" },
-  { id: "3", title: "Novo e-book gratuito", excerpt: "Baixe agora e compartilhe com sua igreja.", category: "Lançamentos", date: "2025-08-01" },
-];
+const items = [
+  { id: 1, title: 'Plano de Leitura: 7 Dias de Gratidão', tag: 'Devocional', image: 'https://images.pexels.com/photos/1653877/pexels-photo-1653877.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940', icon: BookOpenText },
+  { id: 2, title: 'Sermão do Monte: Uma Jornada', tag: 'Curso', image: 'https://images.pexels.com/photos/372326/pexels-photo-372326.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940', icon: PlayCircle },
+  { id: 3, title: 'Guia de Oração para Famílias', tag: 'Material', image: 'https://images.pexels.com/photos/1612461/pexels-photo-1612461.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940', icon: FileText },
+]
 
 export default function ContentList() {
   return (
-    <section>
-      <div className="flex items-end justify-between">
-        <h2 className="text-xl font-semibold">Novidades</h2>
-        <a href="/blog" className="text-sm font-medium text-brand-700 hover:underline">
-          Ver todas
-        </a>
-      </div>
+    <section className="py-20 bg-white">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="flex items-end justify-between mb-10">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Destaques da Semana</h2>
+            <p className="mt-2 text-slate-600">Novos materiais adicionados recentemente.</p>
+          </div>
+          <Link to="/courses" className="hidden md:inline-flex text-sm font-semibold text-amber-600 hover:text-amber-700">Ver todos os recursos →</Link>
+        </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
-        {MOCK.map((p) => (
-          <article key={p.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between text-xs">
-              <span className="rounded-lg bg-brand-50 px-2 py-1 font-medium text-brand-700">{p.category}</span>
-              {p.date && <time className="text-slate-500">{new Date(p.date).toLocaleDateString()}</time>}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {items.map((it) => (
+            <div key={it.id} className="group cursor-pointer">
+              <div className="relative aspect-video overflow-hidden rounded-2xl bg-slate-100 mb-4">
+                <img src={it.image} alt={it.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute top-3 left-3">
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-white/90 backdrop-blur px-2.5 py-1 text-xs font-semibold text-slate-900 shadow-sm">
+                    <it.icon className="h-3 w-3" /> {it.tag}
+                  </span>
+                </div>
+              </div>
+              <h3 className="font-bold text-xl text-slate-900 leading-snug group-hover:text-amber-600 transition-colors">
+                {it.title}
+              </h3>
+              <p className="mt-2 text-sm text-slate-500 line-clamp-2">
+                Comece hoje mesmo este estudo transformador para sua vida espiritual.
+              </p>
             </div>
-            <h3 className="mt-3 text-base font-semibold">{p.title}</h3>
-            <p className="mt-1 text-sm text-slate-600">{p.excerpt}</p>
-            <a href={`/post/${p.id}`} className="mt-3 inline-flex text-sm font-medium text-brand-700 hover:underline">
-              Ler mais
-            </a>
-          </article>
-        ))}
+          ))}
+        </div>
+
+        <div className="mt-8 text-center md:hidden">
+          <Link to="/courses" className="text-sm font-semibold text-amber-600 hover:text-amber-700">Ver todos os recursos →</Link>
+        </div>
       </div>
     </section>
-  );
+  )
 }

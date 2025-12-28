@@ -1,7 +1,7 @@
-import Hero from '../components/Hero'
-import Categories from '../components/Categories'
-import DonationStrip from '../components/DonationStrip'
-import ContentList from '../components/ContentList'
+import Hero from '../components/sections/Hero'
+import Categories from '../components/sections/Categories'
+import DonationStrip from '../components/sections/DonationStrip'
+import ContentList from '../components/sections/ContentList'
 
 export default function Home() {
   return (

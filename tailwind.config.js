@@ -4,6 +4,11 @@ export default {
   theme: {
     extend: {
       colors: {
+        alvorecer: {
+          gold: '#F4C048', // primária
+          cream: '#FFF1DB', // fundo
+          brown: '#8C6A2F', // accent
+        },
         brand: {
           50: '#eef2ff',
           100: '#e0e7ff',
