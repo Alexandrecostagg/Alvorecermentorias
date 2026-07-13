@@ -9,7 +9,7 @@ import {
     signOut as firebaseSignOut
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, getFirestore } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { auth, db, firebaseConfigurationMessage, isFirebaseConfigured } from '../lib/firebase';
 import type { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -31,6 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!isFirebaseConfigured) {
+            setLoading(false);
+            return;
+        }
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
 
@@ -56,12 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const saveUserProfile = async (uid: string, data: Partial<UserProfile>) => {
+        if (!isFirebaseConfigured) throw new Error(firebaseConfigurationMessage);
         await setDoc(doc(db, 'users', uid), data, { merge: true });
         // Update local state optimized
         setUserProfile(prev => prev ? { ...prev, ...data } : data as UserProfile);
     }
 
     const signInWithGoogle = async () => {
+        if (!isFirebaseConfigured) throw new Error(firebaseConfigurationMessage);
         try {
             const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
@@ -94,11 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const loginWithEmail = async (email: string, pass: string) => {
+        if (!isFirebaseConfigured) throw new Error(firebaseConfigurationMessage);
         await signInWithEmailAndPassword(auth, email, pass);
         // Auth state listener will handle fetching profile
     }
 
     const registerWithEmail = async (email: string, pass: string, name: string, cpf?: string, birthDate?: string) => {
+        if (!isFirebaseConfigured) throw new Error(firebaseConfigurationMessage);
         const result = await createUserWithEmailAndPassword(auth, email, pass);
         const user = result.user;
 
@@ -118,6 +127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const logout = async () => {
+        if (!isFirebaseConfigured) {
+            setUser(null);
+            setUserProfile(null);
+            return;
+        }
         try {
             await firebaseSignOut(auth);
             setUserProfile(null);

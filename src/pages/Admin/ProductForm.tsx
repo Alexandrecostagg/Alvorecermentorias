@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { db, storage } from '../../lib/firebase'
+import { db } from '../../lib/firebase'
 import { collection, addDoc, getDoc, doc, updateDoc } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon } from 'lucide-react'
+import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react'
 import { Product } from '../../types'
 
 export default function ProductForm() {
@@ -13,8 +12,6 @@ export default function ProductForm() {
 
     const [loading, setLoading] = useState(false)
     const [initialLoading, setInitialLoading] = useState(isEditing)
-    const [uploading, setUploading] = useState(false)
-    const fileInputRef = useRef<HTMLInputElement>(null)
 
     const [formData, setFormData] = useState<Partial<Product>>({
         title: '',
@@ -55,24 +52,6 @@ export default function ProductForm() {
             ...prev,
             [name]: name === 'price' || name === 'stock' ? Number(value) : value
         }))
-    }
-
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-
-        setUploading(true)
-        try {
-            const storageRef = ref(storage, `products/${Date.now()}_${file.name}`)
-            await uploadBytes(storageRef, file)
-            const url = await getDownloadURL(storageRef)
-            setFormData(prev => ({ ...prev, image: url }))
-        } catch (error) {
-            console.error("Erro no upload", error)
-            alert("Erro ao enviar imagem")
-        } finally {
-            setUploading(false)
-        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -132,31 +111,18 @@ export default function ProductForm() {
                                 ) : (
                                     <ImageIcon className="h-10 w-10 text-slate-300" />
                                 )}
-                                {uploading && (
-                                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                                        <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
-                                    </div>
-                                )}
                             </div>
                             <div className="flex-1">
-                                <button
-                                    type="button"
-                                    disabled={uploading}
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:bg-slate-50 flex items-center gap-2"
-                                >
-                                    <Upload className="h-4 w-4" />
-                                    {uploading ? 'Enviando...' : 'Carregar Imagem'}
-                                </button>
                                 <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
+                                    type="url"
+                                    name="image"
+                                    value={formData.image || ''}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:border-slate-900"
+                                    placeholder="https://media.seudominio.com/produtos/imagem.webp"
                                 />
                                 <p className="text-xs text-slate-500 mt-2">
-                                    Recomendado: 800x800px. JPG, PNG ou WEBP.
+                                    Use a URL pública da imagem enviada ao Cloudflare R2. Recomendado: 800x800px em JPG, PNG ou WEBP.
                                 </p>
                             </div>
                         </div>
@@ -241,7 +207,7 @@ export default function ProductForm() {
                     <div className="pt-6 border-t border-slate-100 flex justify-end">
                         <button
                             type="submit"
-                            disabled={loading || uploading}
+                            disabled={loading}
                             className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all flex items-center gap-2 disabled:opacity-50"
                         >
                             <Save className="h-5 w-5" />

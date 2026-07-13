@@ -2,6 +2,7 @@ import { NavLink, Link } from 'react-router-dom'
 import { Baby, Home as HomeIcon, Library, Users, ShoppingBag, ShoppingCart, Info, Mail, LogIn, LogOut, Package, LayoutDashboard } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
+import { publicMedia } from '../../lib/media'
 
 export default function Header() {
   const { user, userProfile, signInWithGoogle, logout } = useAuth()
@@ -15,7 +16,7 @@ export default function Header() {
       <div className="mx-auto max-w-7xl px-4">
         <div className="h-16 flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 font-semibold group">
-            <img src="https://production.alvorecer-flutter-app.pages.dev/icons/Icon-512.png" alt="Alvorecer" className="h-9 w-9 object-contain transform transition-transform group-hover:scale-110" />
+            <img src={publicMedia('/logo-alvorecer.png')} alt="Alvorecer" className="h-9 w-9 object-contain transform transition-transform group-hover:scale-110" />
             <span className="text-lg tracking-tight text-slate-900">Alvorecer</span>
           </Link>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, firebaseConfigurationMessage, isFirebaseConfigured } from '../lib/firebase';
 import { Product } from '../types';
 
 interface UseProductsOptions {
@@ -14,6 +14,13 @@ export function useProducts({ section, featured }: UseProductsOptions = {}) {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        if (!isFirebaseConfigured) {
+            setProducts([]);
+            setError(firebaseConfigurationMessage);
+            setLoading(false);
+            return;
+        }
+
         async function fetchProducts() {
             try {
                 setLoading(true);

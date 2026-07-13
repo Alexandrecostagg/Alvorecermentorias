@@ -10,17 +10,16 @@ import StorePage from '../pages/Store/StorePage'
 import About from '../pages/About'
 import Contact from '../pages/Contact'
 import CheckoutPage from '../pages/Checkout/CheckoutPage'
+import PaymentReturnPage from '../pages/Checkout/PaymentReturnPage'
 import LoginPage from '../pages/Auth/LoginPage'
 import ProfilePage from '../pages/Auth/ProfilePage'
 import OrdersPage from '../pages/Orders/OrdersPage'
 import PrivateRoute from '../components/auth/PrivateRoute'
 
-import AdminSeeder from '../pages/Admin/AdminSeeder'
 import AdminDashboard from '../pages/Admin/AdminDashboard'
 import AdminOrders from '../pages/Admin/AdminOrders'
 import AdminLayout from '../layouts/AdminLayout'
 import AdminRoute from '../pages/Admin/AdminRoute'
-import PromotePage from '../pages/Admin/PromotePage'
 import ProductList from '../pages/Admin/ProductList'
 import ProductForm from '../pages/Admin/ProductForm'
 
@@ -48,9 +47,8 @@ export default function App() {
             <Route path="/kids" element={<Kids />} />
             <Route path="/sobre" element={<About />} />
             <Route path="/contato" element={<Contact />} />
-            <Route path="/promote" element={<PromotePage />} />
-
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/checkout/status" element={<PaymentReturnPage />} />
 
             {/* Protected Routes */}
             <Route
@@ -72,7 +70,6 @@ export default function App() {
               <Route path="products" element={<ProductList />} />
               <Route path="products/new" element={<ProductForm />} />
               <Route path="products/:id" element={<ProductForm />} />
-              <Route path="seed" element={<AdminSeeder />} />
             </Route>
 
             <Route

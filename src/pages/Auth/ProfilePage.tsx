@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { User, Mail, Phone, Save, Camera, Loader2, Calendar, FileText } from 'lucide-react'
-import { storage } from '../../lib/firebase'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { User, Mail, Phone, Save, Calendar, FileText } from 'lucide-react'
 
 export default function ProfilePage() {
     const { userProfile, saveUserProfile, user } = useAuth()
@@ -15,9 +13,7 @@ export default function ProfilePage() {
     const [photoURL, setPhotoURL] = useState('')
 
     const [saving, setSaving] = useState(false)
-    const [uploading, setUploading] = useState(false)
     const [message, setMessage] = useState('')
-    const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         if (userProfile) {
@@ -28,28 +24,6 @@ export default function ProfilePage() {
             setPhotoURL(userProfile.photoURL || '')
         }
     }, [userProfile])
-
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file || !user) return
-
-        setUploading(true)
-        try {
-            const storageRef = ref(storage, `profiles/${user.uid}/${file.name}`)
-            await uploadBytes(storageRef, file)
-            const url = await getDownloadURL(storageRef)
-            setPhotoURL(url)
-            // Save immediately to firestore
-            await saveUserProfile(user.uid, { photoURL: url })
-            setMessage('Foto atualizada com sucesso! ✅')
-        } catch (error) {
-            console.error("Erro ao fazer upload", error)
-            setMessage('Erro ao enviar a foto. ❌')
-        } finally {
-            setUploading(false)
-            setTimeout(() => setMessage(''), 3000)
-        }
-    }
 
     const formatCPF = (value: string) => {
         return value
@@ -119,32 +93,9 @@ export default function ProfilePage() {
                                     </span>
                                 )}
 
-                                {/* Overlay while uploading */}
-                                {uploading && (
-                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                        <Loader2 className="h-8 w-8 text-white animate-spin" />
-                                    </div>
-                                )}
                             </div>
-
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={uploading}
-                                className="absolute bottom-0 right-0 bg-alvorecer-gold text-white p-2.5 rounded-full shadow-md hover:bg-orange-500 transition-colors disabled:opacity-50 cursor-pointer z-10"
-                                type="button"
-                                aria-label="Alterar foto"
-                            >
-                                <Camera className="h-5 w-5" />
-                            </button>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                className="hidden"
-                                accept="image/*"
-                            />
                         </div>
-                        <p className="mt-4 text-sm text-slate-500">Clique na câmera para alterar sua foto</p>
+                        <p className="mt-4 text-sm text-slate-500">A foto do perfil será integrada com upload privado via Cloudflare em uma próxima etapa.</p>
                     </div>
 
                     {message && (

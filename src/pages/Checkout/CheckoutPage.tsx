@@ -2,19 +2,17 @@ import { useState } from 'react'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 import { Trash2, ArrowRight, ShoppingBag, Minus, Plus, Ticket, Loader2 } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import AddressSelector from '../../components/checkout/AddressSelector'
 import PaymentSelector from '../../components/checkout/PaymentSelector'
-import { doc, setDoc, collection } from 'firebase/firestore'
-import { db } from '../../lib/firebase'
+import { publicMedia } from '../../lib/media'
+import { startAsaasCheckout } from '../../lib/payments'
 
 export default function CheckoutPage() {
     const { items, removeItem, updateQuantity, totalPrice, clear } = useCart()
     const { user, userProfile } = useAuth()
-    const navigate = useNavigate()
 
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
-    const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix' | 'boleto'>('credit_card')
     const [isProcessing, setIsProcessing] = useState(false)
 
     const handleCheckout = async () => {
@@ -26,32 +24,19 @@ export default function CheckoutPage() {
             // Find full address object
             const deliveryAddress = userProfile?.addresses.find(a => a.id === selectedAddressId)
 
-            const orderData = {
-                userId: user.uid,
-                items: items,
-                total: totalPrice,
-                status: 'pending', // pending, paid, shipped
-                paymentMethod: paymentMethod,
+            if (!deliveryAddress) throw new Error('Selecione um endereço de entrega válido.')
+
+            const checkoutUrl = await startAsaasCheckout({
+                user,
+                items,
                 address: deliveryAddress,
-                createdAt: new Date().toISOString()
-            }
+            })
 
-            // Save to Firestore
-            // Using a new auto-generated ID
-            const newOrderRef = doc(collection(db, 'orders'))
-            await setDoc(newOrderRef, orderData)
-
-            // Clear Cart
-            clear()
-
-            // Navigate to Success Page (Simulated)
-            // Ideally navigate to /orders/:id
-            alert(`Pedido realizado com sucesso! ID: ${newOrderRef.id}\nPagamento via: ${paymentMethod}`)
-            navigate('/loja') // Temporary redirect
+            window.location.assign(checkoutUrl)
 
         } catch (error) {
             console.error("Erro ao processar pedido:", error)
-            alert("Houve um erro ao processar seu pedido. Tente novamente.")
+            alert(error instanceof Error ? error.message : 'Houve um erro ao iniciar o pagamento. Tente novamente.')
         } finally {
             setIsProcessing(false)
         }
@@ -95,16 +80,13 @@ export default function CheckoutPage() {
                         />
 
                         {/* Payment Selector */}
-                        <PaymentSelector
-                            selectedMethod={paymentMethod}
-                            onSelect={setPaymentMethod}
-                        />
+                        <PaymentSelector />
 
                         {/* Cart Items List */}
                         {items.map((item) => (
                             <div key={item.product.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
                                 <div className="h-24 w-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden">
-                                    <img src={item.product.image} alt={item.product.title} className="h-full w-full object-cover" />
+                                    <img src={publicMedia(item.product.image)} alt={item.product.title} className="h-full w-full object-cover" />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
@@ -201,7 +183,7 @@ export default function CheckoutPage() {
                                     </>
                                 ) : (
                                     <>
-                                        Finalizar Compra <ArrowRight className="h-5 w-5" />
+                                        Ir para o pagamento seguro <ArrowRight className="h-5 w-5" />
                                     </>
                                 )}
                             </button>

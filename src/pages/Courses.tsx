@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { BookOpenCheck, Tag } from 'lucide-react'
+import { publicMedia } from '../lib/media'
 
 interface Course {
   id: number
@@ -10,9 +11,9 @@ interface Course {
 }
 
 const allCourses: Course[] = [
-  { id: 1, title: 'Fundamentos do Evangelho', level: 'iniciante', cover: '/images/course1.jpg', tags: ['Bíblia','Teologia'] },
-  { id: 2, title: 'Sermão do Monte na Prática', level: 'intermediário', cover: '/images/course2.jpg', tags: ['Vida Cristã'] },
-  { id: 3, title: 'Pentateuco: Panorama', level: 'avançado', cover: '/images/course3.jpg', tags: ['Antigo Testamento'] },
+  { id: 1, title: 'Fundamentos do Evangelho', level: 'iniciante', cover: publicMedia('/images/course1.jpg'), tags: ['Bíblia','Teologia'] },
+  { id: 2, title: 'Sermão do Monte na Prática', level: 'intermediário', cover: publicMedia('/images/course2.jpg'), tags: ['Vida Cristã'] },
+  { id: 3, title: 'Pentateuco: Panorama', level: 'avançado', cover: publicMedia('/images/course3.jpg'), tags: ['Antigo Testamento'] },
 ]
 
 export default function Courses() {

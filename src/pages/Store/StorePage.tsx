@@ -3,6 +3,7 @@ import { Search, ChevronDown, Check, Star, ShoppingBag, Heart } from 'lucide-rea
 import { useProducts } from '../../hooks/useProducts'
 import ProductDetailsModal from '../../components/modals/ProductDetailsModal'
 import type { Product } from '../../types'
+import { publicMedia } from '../../lib/media'
 
 // Categorias dinâmicas poderiam vir do banco também, mantendo estático por enquanto para simplificar filtros
 const CATEGORIES = ['Todos', 'Vida Cristã', 'Teologia', 'Liderança', 'Oração', 'Devocional', 'Família']
@@ -153,7 +154,7 @@ function ProductCard({ product, onView }: any) {
             onClick={onView}
         >
             <div className="relative aspect-[4/5] overflow-hidden bg-[#F4F1EA]">
-                <img src={product.image} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src={publicMedia(product.image)} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
 
                 {product.featured && (
                     <span className="absolute top-0 left-0 bg-slate-900 text-white text-[10px] uppercase font-bold tracking-widest px-3 py-1">

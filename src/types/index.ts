@@ -54,7 +54,7 @@ export type Order = {
   }[]
   total: number
   status: OrderStatus
-  paymentMethod: 'credit_card' | 'pix' | 'boleto'
+  paymentMethod: 'credit_card' | 'pix' | 'boleto' | 'asaas'
   address: Address
   createdAt: string
 }

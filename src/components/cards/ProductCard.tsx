@@ -1,11 +1,12 @@
 import { ShoppingCart } from 'lucide-react'
 import type { Product } from '../../types'
+import { publicMedia } from '../../lib/media'
 
 export default function ProductCard({ product, onAdd }: { product: Product, onAdd?: (p: Product) => void }) {
   return (
     <div className="group rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 hover:shadow-md transition">
       <div className="aspect-square w-full overflow-hidden rounded-xl bg-slate-100">
-        <img src={product.image} alt={product.title} className="h-full w-full object-cover group-hover:scale-[1.02] transition" />
+        <img src={publicMedia(product.image)} alt={product.title} className="h-full w-full object-cover group-hover:scale-[1.02] transition" />
       </div>
       <div className="mt-3">
         <div className="flex items-center justify-between">

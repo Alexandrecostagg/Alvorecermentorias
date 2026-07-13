@@ -1,0 +1,9 @@
+name = "alvorecermentorias-payments"
+main = "src/index.ts"
+compatibility_date = "2026-07-13"
+workers_dev = true
+
+[vars]
+APP_ORIGIN = "https://seu-dominio.com"
+FIREBASE_PROJECT_ID = "alvorecermentorias"
+ASAAS_API_BASE_URL = "https://api-sandbox.asaas.com/v3"

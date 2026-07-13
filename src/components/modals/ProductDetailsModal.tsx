@@ -1,6 +1,7 @@
 import { X, ShoppingCart } from 'lucide-react'
 import type { Product } from '../../types'
 import { useCart } from '../../context/CartContext'
+import { publicMedia } from '../../lib/media'
 
 type Props = {
     product: Product | null
@@ -33,7 +34,7 @@ export default function ProductDetailsModal({ product, onClose }: Props) {
                 <div className="grid md:grid-cols-2">
                     <div className="bg-slate-100 aspect-square md:aspect-auto h-full relative">
                         <img
-                            src={product.image}
+                            src={publicMedia(product.image)}
                             alt={product.title}
                             className="w-full h-full object-cover"
                         />

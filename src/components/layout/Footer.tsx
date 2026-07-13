@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react'
+import { publicMedia } from '../../lib/media'
 
 export default function Footer() {
   return (
@@ -7,7 +8,7 @@ export default function Footer() {
       <div className="mx-auto max-w-6xl px-4 grid md:grid-cols-4 gap-8">
         <div>
           <div className="flex items-center gap-2 font-semibold text-white text-xl mb-4">
-            <img src="https://production.alvorecer-flutter-app.pages.dev/icons/Icon-512.png" alt="Alvorecer" className="h-8 w-8 object-contain" />
+            <img src={publicMedia('/logo-alvorecer.png')} alt="Alvorecer" className="h-8 w-8 object-contain" />
             <span>Alvorecer</span>
           </div>
           <p className="text-sm leading-relaxed">

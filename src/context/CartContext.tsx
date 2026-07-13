@@ -9,8 +9,8 @@ export type CartItem = { product: Product; qty: number }
 type CartCtx = {
   items: CartItem[]
   addItem: (product: Product, qty?: number) => void
-  removeItem: (productId: number) => void
-  updateQuantity: (productId: number, qty: number) => void
+  removeItem: (productId: Product['id']) => void
+  updateQuantity: (productId: Product['id'], qty: number) => void
   clear: () => void
   totalItems: number
   totalPrice: number
@@ -47,11 +47,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
-  const removeItem = (productId: number) => {
+  const removeItem = (productId: Product['id']) => {
     setItems((prev) => prev.filter((it) => it.product.id !== productId))
   }
 
-  const updateQuantity = (productId: number, qty: number) => {
+  const updateQuantity = (productId: Product['id'], qty: number) => {
     setItems((prev) => prev.map((item) => {
       if (item.product.id === productId) {
         return { ...item, qty: Math.max(1, qty) }
@@ -77,4 +77,3 @@ export function useCart() {
   if (!ctx) throw new Error('useCart must be used within CartProvider')
   return ctx
 }
-
