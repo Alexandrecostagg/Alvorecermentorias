@@ -93,6 +93,27 @@ describe('Asaas Worker', () => {
     expect(query.structuredQuery.where.fieldFilter.value).toEqual({ integerValue: '1' })
   })
 
+  it('só envia dados pessoais à Asaas quando o perfil tem CPF válido', () => {
+    expect(testables.buildAsaasCustomerData(
+      { name: 'Cliente', email: 'cliente@example.com' },
+      { name: 'Cliente Teste', cpf: '529.982.247-25', phone: '(11) 99999-9999' },
+    )).toEqual({
+      name: 'Cliente Teste',
+      email: 'cliente@example.com',
+      cpfCnpj: '52998224725',
+      phone: '11999999999',
+    })
+
+    expect(testables.buildAsaasCustomerData(
+      { name: 'Cliente', email: 'cliente@example.com' },
+      { cpf: '' },
+    )).toBeUndefined()
+    expect(testables.buildAsaasCustomerData(
+      { name: 'Cliente', email: 'cliente@example.com' },
+      { cpf: '111.111.111-11' },
+    )).toBeUndefined()
+  })
+
   it('mapeia apenas eventos financeiros conhecidos', () => {
     expect(testables.paymentTransitionFromAsaasEvent('CHECKOUT_PAID')).toEqual({
       orderStatus: 'paid',
@@ -134,7 +155,11 @@ describe('Asaas Worker', () => {
         quantity: 2,
         product: { id: 'produto-1', title: 'Livro', price: 49.9 },
       }],
-      user: { email: 'cliente@example.com', name: 'Cliente' },
+      customerData: {
+        email: 'cliente@example.com',
+        name: 'Cliente',
+        cpfCnpj: '52998224725',
+      },
       billingType: 'PIX',
     }, {
       APP_ORIGIN: 'https://example.com',
@@ -153,7 +178,39 @@ describe('Asaas Worker', () => {
     expect(headers['User-Agent']).toContain('AlvorecerMentorias')
     expect(body.externalReference).toBe('order_123')
     expect(body.billingTypes).toEqual(['PIX'])
-    expect(body.customerData).toEqual({ name: 'Cliente', email: 'cliente@example.com' })
+    expect(body.customerData).toEqual({
+      name: 'Cliente',
+      email: 'cliente@example.com',
+      cpfCnpj: '52998224725',
+    })
     expect(body).not.toHaveProperty('customerData.address')
+  })
+
+  it('deixa a Asaas coletar o CPF quando o perfil não possui documento válido', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      id: 'checkout-2',
+      link: 'https://sandbox.asaas.com/checkoutSession/show/checkout-2',
+      status: 'ACTIVE',
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+
+    await testables.requestAsaasCheckout({
+      orderId: 'order_456',
+      products: [{
+        quantity: 1,
+        product: { id: 'produto-1', title: 'Livro', price: 49.9 },
+      }],
+      billingType: 'PIX',
+    }, {
+      APP_ORIGIN: 'https://example.com',
+      FIREBASE_PROJECT_ID: 'project',
+      FIREBASE_WEB_API_KEY: 'firebase-key',
+      FIREBASE_SERVICE_ACCOUNT_JSON: '{}',
+      ASAAS_API_BASE_URL: 'https://api-sandbox.asaas.com/v3',
+      ASAAS_ACCESS_TOKEN: 'asaas-key',
+      ASAAS_WEBHOOK_TOKEN: 'webhook-key',
+    })
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body)) as Record<string, unknown>
+    expect(body).not.toHaveProperty('customerData')
   })
 })

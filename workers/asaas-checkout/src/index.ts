@@ -24,6 +24,12 @@ type PaymentTransition = {
   orderStatus: 'paid' | 'cancelled'
   checkoutStatus: 'PAID' | 'CANCELED' | 'EXPIRED'
 }
+type AsaasCustomerData = {
+  name: string
+  email: string
+  cpfCnpj: string
+  phone?: string
+}
 
 let googleTokenCache: GoogleTokenCache | undefined
 
@@ -78,6 +84,7 @@ async function createCheckout(request: Request, env: Env) {
   const user = await verifyFirebaseUser(request, env)
   const accessToken = await getGoogleAccessToken(env)
   const products = await loadProducts(items, env, accessToken)
+  const customerData = await loadAsaasCustomerData(user, env, accessToken)
   const orderId = `order_${crypto.randomUUID()}`
   const total = products.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   const now = new Date().toISOString()
@@ -97,7 +104,7 @@ async function createCheckout(request: Request, env: Env) {
 
   let asaasCheckout: { id: string; link: string; status: string }
   try {
-    asaasCheckout = await requestAsaasCheckout({ orderId, products, user, billingType }, env)
+    asaasCheckout = await requestAsaasCheckout({ orderId, products, customerData, billingType }, env)
   } catch (error) {
     await markCheckoutFailure(orderId, env, accessToken)
     throw error
@@ -250,6 +257,47 @@ async function verifyFirebaseUser(request: Request, env: Env) {
   return { uid: account.localId, email: account.email, name: account.displayName || 'Cliente Alvorecer' }
 }
 
+async function loadAsaasCustomerData(
+  user: { uid: string; email: string; name: string },
+  env: Env,
+  accessToken: string,
+): Promise<AsaasCustomerData | undefined> {
+  const profileDocument = await tryReadFirestoreDocument('users', user.uid, env, accessToken)
+  if (!profileDocument?.fields) return undefined
+
+  const profile = fromFirestoreFields(profileDocument.fields) as Record<string, unknown>
+  return buildAsaasCustomerData(user, profile)
+}
+
+function buildAsaasCustomerData(
+  user: { email: string; name: string },
+  profile?: Record<string, unknown>,
+): AsaasCustomerData | undefined {
+  const cpfCnpj = typeof profile?.cpf === 'string' ? profile.cpf.replace(/\D/g, '') : ''
+  if (!isValidCpf(cpfCnpj)) return undefined
+
+  const profileName = typeof profile?.name === 'string' ? profile.name.trim() : ''
+  const phone = typeof profile?.phone === 'string' ? profile.phone.replace(/\D/g, '') : ''
+  return {
+    name: profileName || user.name,
+    email: user.email,
+    cpfCnpj,
+    ...(phone.length >= 10 && phone.length <= 11 ? { phone } : {}),
+  }
+}
+
+function isValidCpf(value: string) {
+  if (!/^\d{11}$/.test(value) || /^(\d)\1{10}$/.test(value)) return false
+
+  const digits = [...value].map(Number)
+  const calculateDigit = (length: number) => {
+    const sum = digits.slice(0, length).reduce((total, digit, index) => total + digit * (length + 1 - index), 0)
+    const remainder = (sum * 10) % 11
+    return remainder === 10 ? 0 : remainder
+  }
+  return calculateDigit(9) === digits[9] && calculateDigit(10) === digits[10]
+}
+
 async function loadProducts(items: CheckoutItemRequest[], env: Env, accessToken: string) {
   return Promise.all(items.map(async ({ productId, quantity }) => {
     const resolvedProduct = await resolveCatalogProduct(productId, env, accessToken)
@@ -331,7 +379,7 @@ async function requestAsaasCheckout(
   data: {
     orderId: string
     products: Array<{ quantity: number; product: { id: string; title: string; price: number; description?: string } }>
-    user: { email: string; name: string }
+    customerData?: AsaasCustomerData
     billingType: AsaasBillingType
   },
   env: Env,
@@ -362,10 +410,7 @@ async function requestAsaasCheckout(
         quantity,
         value: product.price,
       })),
-      customerData: {
-        name: data.user.name,
-        email: data.user.email,
-      },
+      ...(data.customerData ? { customerData: data.customerData } : {}),
     }),
   })
 
@@ -626,6 +671,7 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 }
 
 export const testables = {
+  buildAsaasCustomerData,
   extractOrderId,
   loadProducts,
   normalizeAddress,

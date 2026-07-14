@@ -168,6 +168,7 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Forma de pagamento | PIX e cartão transformados em seletores; o método escolhido limita as opções do checkout hospedado pela Asaas. | Concluído |
 | 14/07/2026 | Integração do frontend | URL pública do Worker configurada no build do Pages para iniciar o checkout Sandbox. | Concluído |
 | 14/07/2026 | Compatibilidade do carrinho | Worker preparado para migrar IDs numéricos legados para os documentos atuais do catálogo antes de criar o pedido. | Concluído |
+| 14/07/2026 | Dados do pagador | `customerData` enviado à Asaas somente com CPF válido; sem documento no perfil, a coleta fica no checkout hospedado. | Concluído |
 
 ## Regras de trabalho
 
