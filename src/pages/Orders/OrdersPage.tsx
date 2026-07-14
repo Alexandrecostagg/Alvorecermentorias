@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { db } from '../../lib/firebase'
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
+import { collection, query, where, getDocs } from 'firebase/firestore'
 import { Order } from '../../types'
 import { Package, Truck, CheckCircle, Clock, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -137,7 +137,7 @@ export default function OrdersPage() {
                                                 />
 
                                                 <div className="relative flex justify-between">
-                                                    {steps.map((step, index) => {
+                                                    {steps.map((step) => {
                                                         const status = getStepStatus(order.status, step.status)
                                                         const Icon = step.icon
 

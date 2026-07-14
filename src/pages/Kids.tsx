@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Filter, Star, Cloud, Sun } from 'lucide-react'
 import { useProducts } from '../hooks/useProducts'
-import { useCart } from '../context/CartContext'
 import ProductDetailsModal from '../components/modals/ProductDetailsModal'
 import type { Product } from '../types'
 

@@ -3,9 +3,7 @@ import { AuthProvider } from '../context/AuthContext'
 import { CartProvider } from '../context/CartContext'
 import AppLayout from '../layouts/AppLayout'
 import Home from '../pages/Home'
-import Courses from '../pages/Courses'
 import Kids from '../pages/Kids'
-import MentoringPage from '../pages/Mentoring/MentoringPage'
 import StorePage from '../pages/Store/StorePage'
 import About from '../pages/About'
 import Contact from '../pages/Contact'
@@ -41,8 +39,6 @@ export default function App() {
         <Routes>
           <Route element={<AuthProvider><AppLayout /></AuthProvider>}>
             <Route path="/" element={<Home />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/mentorias" element={<MentoringPage />} />
             <Route path="/loja" element={<StorePage />} />
             <Route path="/kids" element={<Kids />} />
             <Route path="/sobre" element={<About />} />

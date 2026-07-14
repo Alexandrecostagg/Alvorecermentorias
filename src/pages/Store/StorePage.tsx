@@ -147,11 +147,11 @@ export default function StorePage() {
     )
 }
 
-function ProductCard({ product, onView }: any) {
+function ProductCard({ product, onView }: { product: Product; onView: (product?: Product) => void }) {
     return (
         <div
             className="group bg-white rounded-sm border border-transparent hover:border-[#Eae5d8] hover:shadow-xl transition-all duration-300 cursor-pointer"
-            onClick={onView}
+            onClick={() => onView(product)}
         >
             <div className="relative aspect-[4/5] overflow-hidden bg-[#F4F1EA]">
                 <img src={publicMedia(product.image)} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -187,7 +187,7 @@ function ProductCard({ product, onView }: any) {
 
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
                     <div className="flex flex-col">
-                        {product.originalPrice > 0 && (
+                        {Boolean(product.originalPrice && product.originalPrice > 0) && (
                             <span className="text-xs text-slate-400 line-through">R$ {product.originalPrice?.toFixed(2)}</span>
                         )}
                         <span className="text-lg font-bold text-slate-900">R$ {product.price?.toFixed(2)}</span>

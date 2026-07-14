@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { db } from '../../lib/firebase'
 import { collection, getDocs, doc, updateDoc, orderBy, query } from 'firebase/firestore'
 import { Order, OrderStatus } from '../../types'
-import { Search, Filter, Eye, MoreVertical, CheckCircle, Truck, Package, XCircle, Clock } from 'lucide-react'
+import { Search, Filter, CheckCircle, Truck, Package } from 'lucide-react'
 
 export default function AdminOrders() {
     const [orders, setOrders] = useState<Order[]>([])

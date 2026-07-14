@@ -1,4 +1,5 @@
 import { Play, BookOpen, Star, Users, CheckCircle2, ChevronRight, Lock } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function Mentoring() {
@@ -164,7 +165,7 @@ function CourseTrack({ title, movies }: { title: string, movies: number[] }) {
   )
 }
 
-function FeatureCard({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) {
+function FeatureCard({ icon: Icon, title, desc }: { icon: LucideIcon, title: string, desc: string }) {
   return (
     <div className="bg-white/5 border border-white/10 p-6 rounded-2xl text-left hover:bg-white/10 transition-colors">
       <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-alvorecer-gold mb-4">

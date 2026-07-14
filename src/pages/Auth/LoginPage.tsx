@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { LogIn, UserPlus, Mail, Lock, Eye, EyeOff, Calendar } from 'lucide-react'
+import { getErrorCode, getErrorMessage } from '../../lib/errors'
 
 export default function LoginPage() {
     const { signInWithGoogle, loginWithEmail, registerWithEmail, user } = useAuth()
@@ -28,9 +29,9 @@ export default function LoginPage() {
             setError('')
             await signInWithGoogle()
             navigate(from, { replace: true })
-        } catch (e: any) {
-            console.error(e)
-            if (e.code === 'auth/operation-not-allowed') {
+        } catch (error: unknown) {
+            console.error(error)
+            if (getErrorCode(error) === 'auth/operation-not-allowed') {
                 setError('Login com Google não está ativado no Firebase.')
             } else {
                 setError('Falha no login com Google.')
@@ -91,14 +92,15 @@ export default function LoginPage() {
                 await loginWithEmail(email, pass)
             }
             navigate(from, { replace: true })
-        } catch (e: any) {
-            console.error(e)
+        } catch (error: unknown) {
+            console.error(error)
+            const code = getErrorCode(error)
             // Simple error handling
-            if (e.code === 'auth/email-already-in-use') setError('Este e-mail já está cadastrado.')
-            else if (e.code === 'auth/wrong-password') setError('Senha incorreta.')
-            else if (e.code === 'auth/user-not-found') setError('Usuário não encontrado.')
-            else if (e.code === 'auth/weak-password') setError('A senha deve ter pelo menos 6 caracteres.')
-            else setError('Erro ao autenticar: ' + e.message)
+            if (code === 'auth/email-already-in-use') setError('Este e-mail já está cadastrado.')
+            else if (code === 'auth/wrong-password') setError('Senha incorreta.')
+            else if (code === 'auth/user-not-found') setError('Usuário não encontrado.')
+            else if (code === 'auth/weak-password') setError('A senha deve ter pelo menos 6 caracteres.')
+            else setError('Erro ao autenticar: ' + getErrorMessage(error, 'tente novamente.'))
         }
     }
 

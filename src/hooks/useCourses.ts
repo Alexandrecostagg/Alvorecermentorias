@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Course, CourseLevel } from "../types/course";
 import { fetchCourses } from "../services/courses";
+import { getErrorMessage } from "../lib/errors";
 
 export function useCourses() {
   const [query, setQuery] = useState("");
@@ -18,8 +19,8 @@ export function useCourses() {
       .then((data) => {
         if (!aborted) setItems(data);
       })
-      .catch((e: any) => {
-        if (!aborted) setError(e?.message ?? "Erro ao carregar cursos");
+      .catch((error: unknown) => {
+        if (!aborted) setError(getErrorMessage(error, "Erro ao carregar cursos"));
       })
       .finally(() => {
         if (!aborted) setLoading(false);

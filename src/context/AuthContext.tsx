@@ -8,7 +8,7 @@ import {
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, getFirestore } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, firebaseConfigurationMessage, isFirebaseConfigured } from '../lib/firebase';
 import type { UserProfile } from '../types';
 
@@ -38,24 +38,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
+            try {
+                if (currentUser) {
+                    const docRef = doc(db, 'users', currentUser.uid);
+                    const docSnap = await getDoc(docRef);
 
-            if (currentUser) {
-                // Fetch User Profile from Firestore
-                const docRef = doc(db, 'users', currentUser.uid);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    setUserProfile(docSnap.data() as UserProfile);
+                    if (docSnap.exists()) {
+                        setUserProfile(docSnap.data() as UserProfile);
+                    } else {
+                        setUserProfile(null);
+                    }
                 } else {
-                    // Normalize Google Auth users who might not have a doc yet
-                    // Ideally we create it here or rely on the sign-in function
                     setUserProfile(null);
                 }
-            } else {
+            } catch (error) {
+                console.error('Erro ao carregar o perfil do usuário', error);
                 setUserProfile(null);
+            } finally {
+                setLoading(false);
             }
-
-            setLoading(false);
         });
         return () => unsubscribe();
     }, []);

@@ -1,32 +1,22 @@
 import { useState, useEffect } from 'react'
-import { Play, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const SLIDES = [
   {
     id: 1,
-    type: 'image',
     src: 'https://images.pexels.com/photos/346529/pexels-photo-346529.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    tag: 'Nova Plataforma',
-    title: <>Desperte seu propósito e <span className="text-transparent bg-clip-text bg-gradient-to-r from-alvorecer-gold to-yellow-200">caminhe em fé.</span></>,
-    desc: 'Uma plataforma completa com mentorias, cursos bíblicos e materiais exclusivos para fortalecer sua vida espiritual.',
-    primaryAction: { text: 'Conhecer Mentorias', link: '/mentorias' },
-    secondaryAction: { text: 'Ver Cursos', link: '/courses' }
+    alt: 'Paisagem ao amanhecer representando uma nova jornada de fé',
+    tag: 'Livraria Alvorecer',
+    title: <>Recursos para fortalecer sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-alvorecer-gold to-yellow-200">caminhada de fé.</span></>,
+    desc: 'Encontre livros, devocionais e materiais selecionados para sua vida, família e ministério.',
+    primaryAction: { text: 'Explorar a Loja', link: '/loja' },
+    secondaryAction: { text: 'Conhecer a Alvorecer', link: '/sobre' }
   },
   {
     id: 2,
-    type: 'video', // Simulando um slide de video highlight
-    src: 'https://images.pexels.com/photos/8373467/pexels-photo-8373467.jpeg?auto=compress&cs=tinysrgb&w=1260', // Thumbnail do video
-    tag: 'Série Exclusiva',
-    title: <>O Poder da <span className="text-alvorecer-gold">Oração em Família</span></>,
-    desc: 'Assista ao primeiro episódio da nova série que vai transformar o ambiente do seu lar.',
-    primaryAction: { text: 'Assistir Agora', link: '/courses/prayer', icon: Play },
-    secondaryAction: null
-  },
-  {
-    id: 3,
-    type: 'image',
     src: 'https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=1260',
+    alt: 'Família reunida representando a coleção infantil Alvorecer',
     tag: 'Lançamento Loja',
     title: <>Coleção <span className="text-sky-400">Kids</span> Disponível</>,
     desc: 'Materiais lúdicos para ensinar o caminho da luz aos pequenos desde cedo.',
@@ -60,7 +50,7 @@ export default function Hero() {
         >
           {/* Background */}
           <div className="absolute inset-0">
-            <img src={slide.src} alt="Hero bg" className="w-full h-full object-cover opacity-30" />
+            <img src={slide.src} alt={slide.alt} className="w-full h-full object-cover opacity-30" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/40 to-transparent" />
           </div>
@@ -68,7 +58,7 @@ export default function Hero() {
           {/* Content */}
           <div className="relative z-20 h-full max-w-6xl mx-auto px-4 flex items-center">
             <div className="max-w-3xl transform transition-all duration-1000 translate-y-0 opacity-100">
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mb-6 border ${slide.type === 'video' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-alvorecer-gold/20 text-alvorecer-gold border-alvorecer-gold/30'}`}>
+              <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold mb-6 border bg-alvorecer-gold/20 text-alvorecer-gold border-alvorecer-gold/30">
                 {slide.tag}
               </span>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight mb-6 text-white">
@@ -84,9 +74,8 @@ export default function Hero() {
                     to={slide.primaryAction.link}
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-alvorecer-gold px-8 py-4 text-slate-900 font-bold hover:bg-alvorecer-gold/90 transition-all shadow-lg shadow-alvorecer-gold/20 hover:scale-105"
                   >
-                    {slide.primaryAction.icon && <slide.primaryAction.icon className="h-5 w-5 fill-current" />}
                     {slide.primaryAction.text}
-                    {!slide.primaryAction.icon && <ArrowRight className="h-5 w-5" />}
+                    <ArrowRight className="h-5 w-5" />
                   </Link>
                 )}
                 {slide.secondaryAction && (
@@ -94,7 +83,7 @@ export default function Hero() {
                     to={slide.secondaryAction.link}
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 backdrop-blur-sm px-8 py-4 text-white font-semibold hover:bg-white/20 transition-all border border-white/10"
                   >
-                    <Play className="h-5 w-5 fill-current" /> {slide.secondaryAction.text}
+                    {slide.secondaryAction.text}
                   </Link>
                 )}
               </div>
@@ -104,10 +93,10 @@ export default function Hero() {
       ))}
 
       {/* Navigation arrows */}
-      <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+      <button aria-label="Slide anterior" onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
         <ChevronLeft className="h-6 w-6" />
       </button>
-      <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+      <button aria-label="Próximo slide" onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
         <ChevronRight className="h-6 w-6" />
       </button>
 
@@ -116,6 +105,8 @@ export default function Hero() {
         {SLIDES.map((_, i) => (
           <button
             key={i}
+            aria-label={`Exibir slide ${i + 1}`}
+            aria-current={i === current ? 'true' : undefined}
             onClick={() => setCurrent(i)}
             className={`w-3 h-3 rounded-full transition-all ${i === current ? 'bg-alvorecer-gold w-8' : 'bg-white/30 hover:bg-white/50'}`}
           />

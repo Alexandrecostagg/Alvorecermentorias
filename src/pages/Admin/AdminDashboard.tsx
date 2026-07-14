@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { db } from '../../lib/firebase'
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
 import { Order } from '../../types'
-import { DollarSign, Package, ShoppingBag, TrendingUp, Users } from 'lucide-react'
+import { DollarSign, Package, ShoppingBag, TrendingUp } from 'lucide-react'
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
@@ -31,16 +31,13 @@ export default function AdminDashboard() {
                 })
 
                 // Products
-                const productsSnap = await getDocs(collection(db, 'products')) // Assuming 'products' collection exists or 'store' items
-                // Note: We might be pulling from 'store' or 'products' - checking previous context, it seems creating products saves to 'products' collection in AdminSeeder? 
-                // Ah, previous AdminPage wrote to 'cursos'. Our new system should standardize on 'products'.
-                // Let's assume 'products' for now.
+                const productsSnap = await getDocs(collection(db, 'products'))
 
                 setStats({
                     totalRevenue: revenue,
                     totalOrders: allOrdersSnap.size,
                     pendingOrders: pending,
-                    totalProducts: productsSnap.size // Might be 0 if we haven't migrated yet
+                    totalProducts: productsSnap.size
                 })
 
                 setRecentOrders(ordersSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order)))

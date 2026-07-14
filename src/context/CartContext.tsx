@@ -27,12 +27,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       const raw = localStorage.getItem(LS_KEY)
       if (raw) setItems(JSON.parse(raw))
-    } catch { }
+    } catch {
+      // Um carrinho inválido não deve impedir a aplicação de iniciar.
+    }
   }, [])
 
   // persist to localStorage
   useEffect(() => {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(items)) } catch { }
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(items))
+    } catch {
+      // O carrinho continua funcional mesmo quando o navegador bloqueia o storage.
+    }
   }, [items])
 
   const addItem = (product: Product, qty: number = 1) => {

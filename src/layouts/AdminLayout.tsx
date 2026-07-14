@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ShoppingBag, Package, LogOut, ExternalLink, Settings } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Package, LogOut, ExternalLink } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export default function AdminLayout() {

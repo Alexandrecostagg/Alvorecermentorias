@@ -1,11 +1,11 @@
-import { Baby, BookOpen, Heart, Music2, ArrowRight } from 'lucide-react'
+import { Baby, BookOpen, Heart, Info, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const cards = [
-  { title: 'Devocionais', desc: 'Leituras diárias para fortalecer sua fé.', icon: Heart, href: '/courses', color: 'bg-rose-100 text-rose-600' },
-  { title: 'Cursos Bíblicos', desc: 'Trilhas de estudo profundas.', icon: BookOpen, href: '/courses', color: 'bg-blue-100 text-blue-600' },
-  { title: 'Infantil / Kids', desc: 'Conteúdos para os pequenos.', icon: Baby, href: '/kids', color: 'bg-amber-100 text-amber-600' },
-  { title: 'Louvor & Adoração', desc: 'Playlists que edificam.', icon: Music2, href: '#', color: 'bg-purple-100 text-purple-600' },
+  { title: 'Livros e Devocionais', desc: 'Leituras para fortalecer sua caminhada.', icon: Heart, href: '/loja', color: 'bg-rose-100 text-rose-600' },
+  { title: 'Recursos Cristãos', desc: 'Materiais para sua vida e ministério.', icon: BookOpen, href: '/loja', color: 'bg-blue-100 text-blue-600' },
+  { title: 'Infantil / Kids', desc: 'Materiais para semear a fé nos pequenos.', icon: Baby, href: '/kids', color: 'bg-amber-100 text-amber-600' },
+  { title: 'Nossa História', desc: 'Conheça o propósito da Alvorecer.', icon: Info, href: '/sobre', color: 'bg-purple-100 text-purple-600' },
 ]
 
 export default function Categories() {

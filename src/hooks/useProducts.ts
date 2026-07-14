@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db, firebaseConfigurationMessage, isFirebaseConfigured } from '../lib/firebase';
-import { Product } from '../types';
+import type { Product } from '../types';
+import { getErrorMessage } from '../lib/errors';
 
 interface UseProductsOptions {
     section?: 'store' | 'kids';
@@ -24,6 +25,7 @@ export function useProducts({ section, featured }: UseProductsOptions = {}) {
         async function fetchProducts() {
             try {
                 setLoading(true);
+                setError(null);
                 const productsRef = collection(db, 'products');
 
                 // Construir query inicial
@@ -52,9 +54,9 @@ export function useProducts({ section, featured }: UseProductsOptions = {}) {
                     : data;
 
                 setProducts(filtered);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Error fetching products:", err);
-                setError(err.message);
+                setError(getErrorMessage(err, 'Erro ao carregar produtos'));
             } finally {
                 setLoading(false);
             }

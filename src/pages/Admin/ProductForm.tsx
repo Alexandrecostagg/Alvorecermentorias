@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { db } from '../../lib/firebase'
 import { collection, addDoc, getDoc, doc, updateDoc } from 'firebase/firestore'
@@ -23,13 +23,7 @@ export default function ProductForm() {
         section: 'store'
     })
 
-    useEffect(() => {
-        if (isEditing && id) {
-            fetchProduct(id)
-        }
-    }, [id])
-
-    async function fetchProduct(productId: string) {
+    const fetchProduct = useCallback(async (productId: string) => {
         try {
             const docRef = doc(db, 'products', productId)
             const docSnap = await getDoc(docRef)
@@ -44,7 +38,13 @@ export default function ProductForm() {
         } finally {
             setInitialLoading(false)
         }
-    }
+    }, [navigate])
+
+    useEffect(() => {
+        if (isEditing && id) {
+            void fetchProduct(id)
+        }
+    }, [fetchProduct, id, isEditing])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
