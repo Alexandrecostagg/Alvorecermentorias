@@ -5,7 +5,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore'
 import { Order } from '../../types'
 import { Package, Truck, CheckCircle, Clock, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { publicMedia } from '../../lib/media'
+import ProductImage from '../../components/ui/ProductImage'
 
 export default function OrdersPage() {
     const { user } = useAuth()
@@ -166,7 +166,7 @@ export default function OrdersPage() {
                                             <h4 className="font-bold text-slate-800 mb-2">Itens do Pedido</h4>
                                             {order.items.map((item, idx) => (
                                                 <div key={idx} className="flex items-start gap-4 bg-white p-4 rounded-xl border border-slate-200">
-                                                    <img src={publicMedia(item.product.image)} alt={item.product.title} className="w-16 h-16 object-cover rounded-lg border border-slate-100" />
+                                                    <ProductImage src={item.product.image} alt={item.product.title} className="w-16 h-16 object-cover rounded-lg border border-slate-100" />
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-base font-semibold text-slate-900 leading-tight mb-1">{item.product.title}</p>
                                                         <p className="text-sm text-slate-500">Qtd: {item.qty}</p>

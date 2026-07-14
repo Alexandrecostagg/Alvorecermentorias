@@ -1,88 +1,120 @@
-import { X, ShoppingCart } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { CheckCircle, ShoppingCart, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { Product } from '../../types'
 import { useCart } from '../../context/CartContext'
-import { publicMedia } from '../../lib/media'
+import ProductImage from '../ui/ProductImage'
 
 type Props = {
-    product: Product | null
-    onClose: () => void
+  product: Product | null
+  onClose: () => void
 }
 
+const money = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+})
+
 export default function ProductDetailsModal({ product, onClose }: Props) {
-    const { addItem } = useCart()
+  const { addItem } = useCart()
+  const titleId = useId()
+  const closeRef = useRef(onClose)
+  const [added, setAdded] = useState(false)
 
-    if (!product) return null
+  useEffect(() => {
+    closeRef.current = onClose
+  }, [onClose])
 
-    const handleAddToCart = () => {
-        addItem(product)
-        alert('Produto adicionado ao carrinho! 🛒')
-        onClose()
+  useEffect(() => {
+    setAdded(false)
+    if (!product) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeRef.current()
     }
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', handleKeyDown)
 
-            <div className="relative bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 z-10 p-2 bg-white/50 backdrop-blur-md rounded-full hover:bg-white transition-colors"
-                >
-                    <X className="h-6 w-6 text-slate-900" />
-                </button>
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [product])
 
-                <div className="grid md:grid-cols-2">
-                    <div className="bg-slate-100 aspect-square md:aspect-auto h-full relative">
-                        <img
-                            src={publicMedia(product.image)}
-                            alt={product.title}
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
+  if (!product) return null
 
-                    <div className="p-8 flex flex-col h-full">
-                        <div className="flex-1">
-                            <span className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-2 block">
-                                {product.category}
-                            </span>
-                            <h2 className="text-3xl font-black text-slate-900 mb-4 leading-tight">
-                                {product.title}
-                            </h2>
+  const inStock = product.stock === undefined || product.stock > 0
+  const handleAddToCart = () => {
+    if (!inStock || added) return
+    addItem(product)
+    setAdded(true)
+  }
 
-                            <div className="flex items-center gap-4 mb-6">
-                                <span className="text-3xl font-bold text-slate-900">
-                                    R$ {product.price.toFixed(2)}
-                                </span>
-                                {product.badge && (
-                                    <span className="bg-red-400 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                        {product.badge}
-                                    </span>
-                                )}
-                            </div>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button type="button" aria-label="Fechar detalhes do produto" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-                            <div className="space-y-4 text-slate-600 mb-8">
-                                <p>
-                                    <strong>Faixa Etária:</strong> {product.ageRange} anos
-                                </p>
-                                <p>
-                                    <strong>Estoque:</strong> {product.stock ? `${product.stock} unidades` : 'Disponível'}
-                                </p>
-                                <p className="leading-relaxed">
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
-                                </p>
-                            </div>
-                        </div>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200"
+      >
+        <button type="button" aria-label="Fechar" onClick={onClose} className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-md rounded-full hover:bg-white transition-colors shadow-sm">
+          <X className="h-6 w-6 text-slate-900" />
+        </button>
 
-                        <button
-                            onClick={handleAddToCart}
-                            className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95"
-                        >
-                            <ShoppingCart className="h-5 w-5" />
-                            Adicionar ao Carrinho
-                        </button>
-                    </div>
+        <div className="grid md:grid-cols-2">
+          <div className="bg-slate-100 aspect-square md:aspect-auto min-h-72 relative">
+            <ProductImage src={product.image} alt={product.title} className="w-full h-full object-cover" />
+          </div>
+
+          <div className="p-6 md:p-8 flex flex-col">
+            <div className="flex-1">
+              <span className="text-xs font-bold text-sky-600 uppercase tracking-wider mb-2 block">{product.category}</span>
+              <h2 id={titleId} className="text-2xl md:text-3xl font-black text-slate-900 mb-3 leading-tight">{product.title}</h2>
+              {product.author && <p className="text-sm text-slate-500 mb-4">por {product.author}</p>}
+
+              <div className="flex flex-wrap items-center gap-3 mb-6">
+                <span className="text-3xl font-bold text-slate-900">{money.format(product.price)}</span>
+                {product.badge && <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">{product.badge}</span>}
+              </div>
+
+              <dl className="space-y-2 text-sm text-slate-600 mb-6">
+                {product.ageRange && <div><dt className="font-semibold inline">Faixa etária: </dt><dd className="inline">{product.ageRange} anos</dd></div>}
+                {product.type && <div><dt className="font-semibold inline">Tipo: </dt><dd className="inline">{product.type}</dd></div>}
+                <div>
+                  <dt className="font-semibold inline">Disponibilidade: </dt>
+                  <dd className="inline">{product.stock === undefined ? 'Disponível' : product.stock > 0 ? `${product.stock} unidades` : 'Esgotado'}</dd>
                 </div>
+              </dl>
+
+              <p className="leading-relaxed text-slate-600 mb-8">
+                {product.description || 'Descrição detalhada ainda não informada.'}
+              </p>
             </div>
+
+            {added ? (
+              <div role="status" className="rounded-xl bg-green-50 border border-green-200 p-4 text-green-800">
+                <p className="font-bold flex items-center gap-2"><CheckCircle className="h-5 w-5" />Produto adicionado</p>
+                <Link to="/checkout" className="mt-3 inline-flex font-semibold underline underline-offset-4">Ir para o carrinho</Link>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                disabled={!inStock}
+                className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {inStock ? 'Adicionar ao carrinho' : 'Produto esgotado'}
+              </button>
+            )}
+          </div>
         </div>
-    )
+      </section>
+    </div>
+  )
 }

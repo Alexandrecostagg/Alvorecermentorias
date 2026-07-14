@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Filter, Star, Cloud, Sun } from 'lucide-react'
 import { useProducts } from '../hooks/useProducts'
 import ProductDetailsModal from '../components/modals/ProductDetailsModal'
+import ProductImage from '../components/ui/ProductImage'
 import type { Product } from '../types'
 
 const ageRanges = ['0-2', '3-5', '6-8', '9-12'] as const
@@ -87,6 +88,7 @@ export default function Kids() {
               <div className="bg-[#FFF8E1] rounded-xl p-2 border-2 border-yellow-400 flex items-center px-4">
                 <span className="text-yellow-600 mr-2">🔍</span>
                 <input
+                  aria-label="Buscar produtos infantis"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="O que você procura?"
@@ -96,7 +98,7 @@ export default function Kids() {
 
               <div className="bg-[#E3F2FD] rounded-xl p-2 border-2 border-sky-400 flex items-center px-4">
                 <Filter className="w-5 h-5 text-sky-500 mr-2" />
-                <select value={age} onChange={(e) => setAge(e.target.value)} className="bg-transparent w-full text-slate-700 font-bold outline-none cursor-pointer">
+                <select aria-label="Filtrar por idade" value={age} onChange={(e) => setAge(e.target.value)} className="bg-transparent w-full text-slate-700 font-bold outline-none cursor-pointer">
                   <option value="">Todas as idades</option>
                   {ageRanges.map((a) => <option key={a} value={a}>{a} anos</option>)}
                 </select>
@@ -104,7 +106,7 @@ export default function Kids() {
 
               <div className="bg-[#FCE4EC] rounded-xl p-2 border-2 border-pink-400 flex items-center px-4">
                 <Star className="w-5 h-5 text-pink-500 mr-2" />
-                <select value={cat} onChange={(e) => setCat(e.target.value)} className="bg-transparent w-full text-slate-700 font-bold outline-none cursor-pointer">
+                <select aria-label="Filtrar por categoria" value={cat} onChange={(e) => setCat(e.target.value)} className="bg-transparent w-full text-slate-700 font-bold outline-none cursor-pointer">
                   <option value="">Todas as categorias</option>
                   {categories.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -122,13 +124,12 @@ export default function Kids() {
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {list.map((p) => (
-                <div
+                <article
                   key={p.id}
-                  className="group bg-white rounded-[2rem] p-4 shadow-lg hover:-translate-y-2 transition-transform duration-300 border-b-8 border-r-4 border-slate-200 hover:border-yellow-400 cursor-pointer"
-                  onClick={() => setSelectedProduct(p)}
+                  className="group bg-white rounded-[2rem] p-4 shadow-lg hover:-translate-y-2 transition-transform duration-300 border-b-8 border-r-4 border-slate-200 hover:border-yellow-400"
                 >
                   <div className="bg-slate-100 rounded-[1.5rem] overflow-hidden aspect-square mb-4 relative">
-                    <img src={p.image} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <ProductImage src={p.image} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     {p.badge && (
                       <span className="absolute top-3 right-3 bg-red-400 text-white text-xs font-black px-3 py-1 rounded-full shadow-md transform rotate-3">
                         {p.badge}
@@ -141,17 +142,16 @@ export default function Kids() {
                     <div className="flex items-center justify-between mt-3">
                       <span className="text-xl font-black text-slate-900">R$ {p.price.toFixed(2)}</span>
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation() // Prevent opening modal twice or conflict
-                          setSelectedProduct(p)
-                        }}
+                        type="button"
+                        aria-label={`Ver detalhes de ${p.title}`}
+                        onClick={() => setSelectedProduct(p)}
                         className="bg-yellow-400 text-yellow-900 w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-md hover:bg-yellow-300 active:scale-95 transition-all"
                       >
                         +
                       </button>
                     </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}

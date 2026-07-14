@@ -53,9 +53,9 @@ Status: **em andamento**
 - [ ] Remover produtos duplicados no Firestore.
 - [ ] Substituir imagens quebradas por arquivos do R2.
 - [x] Criar navegação móvel.
-- [ ] Transformar filtros móveis em painel recolhível.
-- [ ] Corrigir ou remover ordenação e favoritos sem função.
-- [ ] Revisar modal e detalhes de produto.
+- [x] Transformar filtros móveis em painel recolhível.
+- [x] Corrigir ou remover ordenação e favoritos sem função.
+- [x] Revisar modal e detalhes de produto.
 - [ ] Preencher contato, endereço e redes oficiais.
 - [ ] Publicar Política de Privacidade e Termos de Uso.
 - [ ] Otimizar imagens grandes e retirar duplicação desnecessária no Pages.
@@ -140,6 +140,11 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Firebase | Acesso de `infinitygravitycode@gmail.com` ao projeto `alvorecermentorias` confirmado. | Concluído |
 | 14/07/2026 | Testes de regras | Firestore Emulator executado com Java 21; 12 de 12 testes aprovados. | Concluído |
 | 14/07/2026 | Deploy Firebase | Regras compiladas e publicadas no projeto `alvorecermentorias`. | Concluído |
+| 14/07/2026 | Catálogo | Auditoria somente leitura encontrou 24 documentos, 11 pares duplicados e 1 conflito de seção. | Concluído |
+| 14/07/2026 | Identidade de produto | Frontend corrigido para sempre usar o ID real do documento Firestore no carrinho e checkout. | Concluído |
+| 14/07/2026 | UX da loja | Busca, ordenação, filtros móveis, estados vazio/erro e modal de produto revisados. | Concluído |
+| 14/07/2026 | Imagens | Fallback visual implementado para URLs indisponíveis; três arquivos próprios ainda precisam ser enviados ao R2. | Parcial |
+| 14/07/2026 | Limpeza de dados | Lote exato de 12 documentos registrado em `AUDITORIA_CATALOGO.md`; exclusão aguarda confirmação. | Aguardando aprovação |
 
 ## Regras de trabalho
 

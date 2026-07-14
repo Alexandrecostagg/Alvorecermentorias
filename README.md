@@ -47,10 +47,14 @@ para a origem pública do bucket R2.
 npm run dev
 npm run typecheck
 npm run lint
+npm run audit:catalog
 npm run test:rules
 npm run build
 npm run preview
 ```
+
+`audit:catalog` consulta o catálogo em modo somente leitura e informa
+duplicidades, conflitos de seção, campos incompletos e imagens inacessíveis.
 
 ## Worker de pagamentos
 
@@ -79,3 +83,6 @@ de produção.
 
 O checklist, bloqueios e registro cronológico ficam em
 [`docs/PLANO_LANCAMENTO.md`](docs/PLANO_LANCAMENTO.md).
+
+O diagnóstico e o lote proposto para limpeza dos produtos ficam em
+[`docs/AUDITORIA_CATALOGO.md`](docs/AUDITORIA_CATALOGO.md).

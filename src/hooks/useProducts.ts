@@ -43,10 +43,10 @@ export function useProducts({ section, featured }: UseProductsOptions = {}) {
                 // Vamos aplicar no cliente para evitar erros de índice agora.
 
                 const snapshot = await getDocs(q);
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id, // ID string do Firestore
-                    ...doc.data()
-                })) as unknown as Product[]; // Cast para Product (ajustaremos o tipo se precisar)
+                const data = snapshot.docs.map(productDocument => ({
+                    ...productDocument.data(),
+                    id: productDocument.id,
+                })) as Product[];
 
                 // Filtro client-side para featured se fornecido
                 const filtered = featured
