@@ -180,6 +180,9 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Expedição | Fluxo de separação, envio, transportadora, rastreio e entrega implementado sem permitir aprovação manual de pagamento. | Concluído |
 | 14/07/2026 | Área do cliente | Pedidos passam a atualizar em tempo real e exibem separação, envio e link de rastreamento. | Concluído |
 | 14/07/2026 | Logística | Melhor Envio escolhido para a próxima integração por cobrir cotação, compra, etiqueta e rastreamento via API. | Planejado |
+| 14/07/2026 | Git | Operação de pedidos e rastreio salva no commit `5f7c424` e enviada para `origin/main`. | Concluído |
+| 14/07/2026 | Deploy Worker | Proteção das transições logísticas e snapshot do cliente publicados na versão `2bfea851-7576-439e-b9e6-ae4216aeb7ca`. | Concluído |
+| 14/07/2026 | Deploy Pages | Painel operacional e acompanhamento publicados no deployment `eedba24a-7fa3-48ab-bbca-3955c1f256fa`. | Concluído |
 
 ## Regras de trabalho
 
