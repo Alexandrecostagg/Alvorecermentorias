@@ -11,9 +11,10 @@
     "typecheck": "tsc -b --pretty",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "npm run test:rules && npm run test:payments",
+    "test": "npm run test:rules && npm run test:payments && npm run test:auth",
     "test:rules": "node scripts/test-firestore-rules.mjs",
     "test:payments": "vitest run tests/asaas-worker.test.ts",
+    "test:auth": "vitest run tests/auth-errors.test.ts",
     "audit:catalog": "node scripts/audit-catalog.mjs",
     "preview": "vite preview",
     "api": "json-server --watch db.json --port 4000"

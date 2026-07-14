@@ -3,9 +3,15 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { LogIn, UserPlus, Mail, Lock, Eye, EyeOff, Calendar } from 'lucide-react'
 import { getErrorCode, getErrorMessage } from '../../lib/errors'
+import {
+    getGoogleSignInErrorMessage,
+    getPasswordResetErrorMessage,
+    getPasswordSignInErrorMessage,
+    PASSWORD_RESET_SUCCESS_MESSAGE,
+} from '../../lib/auth-errors'
 
 export default function LoginPage() {
-    const { signInWithGoogle, loginWithEmail, registerWithEmail, user } = useAuth()
+    const { signInWithGoogle, loginWithEmail, registerWithEmail, resetPassword, user } = useAuth()
     const navigate = useNavigate()
     const location = useLocation()
 
@@ -19,7 +25,9 @@ export default function LoginPage() {
 
     const [showPass, setShowPass] = useState(false)
     const [error, setError] = useState('')
+    const [message, setMessage] = useState('')
     const [passwordError, setPasswordError] = useState('')
+    const [isResettingPassword, setIsResettingPassword] = useState(false)
 
     // Get the redirect path from state, or default to home
     const from = location.state?.from?.pathname || '/'
@@ -27,15 +35,34 @@ export default function LoginPage() {
     const handleGoogleLogin = async () => {
         try {
             setError('')
+            setMessage('')
             await signInWithGoogle()
             navigate(from, { replace: true })
         } catch (error: unknown) {
             console.error(error)
-            if (getErrorCode(error) === 'auth/operation-not-allowed') {
-                setError('Login com Google não está ativado no Firebase.')
-            } else {
-                setError('Falha no login com Google.')
-            }
+            setError(getGoogleSignInErrorMessage(error))
+        }
+    }
+
+    const handlePasswordReset = async () => {
+        const normalizedEmail = email.trim()
+        setError('')
+        setMessage('')
+
+        if (!normalizedEmail) {
+            setError('Digite seu e-mail para recuperar a senha.')
+            return
+        }
+
+        setIsResettingPassword(true)
+        try {
+            await resetPassword(normalizedEmail)
+            setMessage(PASSWORD_RESET_SUCCESS_MESSAGE)
+        } catch (error: unknown) {
+            console.error(error)
+            setError(getPasswordResetErrorMessage(error))
+        } finally {
+            setIsResettingPassword(false)
         }
     }
 
@@ -62,6 +89,7 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
+        setMessage('')
         setPasswordError('')
 
         try {
@@ -97,10 +125,9 @@ export default function LoginPage() {
             const code = getErrorCode(error)
             // Simple error handling
             if (code === 'auth/email-already-in-use') setError('Este e-mail já está cadastrado.')
-            else if (code === 'auth/wrong-password') setError('Senha incorreta.')
-            else if (code === 'auth/user-not-found') setError('Usuário não encontrado.')
             else if (code === 'auth/weak-password') setError('A senha deve ter pelo menos 6 caracteres.')
-            else setError('Erro ao autenticar: ' + getErrorMessage(error, 'tente novamente.'))
+            else if (!isRegistering) setError(getPasswordSignInErrorMessage(error))
+            else setError('Não foi possível criar a conta: ' + getErrorMessage(error, 'tente novamente.'))
         }
     }
 
@@ -127,8 +154,14 @@ export default function LoginPage() {
                 </p>
 
                 {error && (
-                    <div className="bg-red-50 text-red-500 text-sm p-3 rounded-lg mb-4 text-center">
+                    <div role="alert" className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4 text-center">
                         {error}
+                    </div>
+                )}
+
+                {message && (
+                    <div role="status" className="bg-emerald-50 text-emerald-700 text-sm p-3 rounded-lg mb-4 text-center">
+                        {message}
                     </div>
                 )}
 
@@ -206,6 +239,19 @@ export default function LoginPage() {
                             {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                     </div>
+
+                    {!isRegistering && (
+                        <div className="-mt-2 text-right">
+                            <button
+                                type="button"
+                                onClick={handlePasswordReset}
+                                disabled={isResettingPassword}
+                                className="text-sm font-semibold text-slate-700 hover:text-slate-950 hover:underline disabled:cursor-wait disabled:opacity-60"
+                            >
+                                {isResettingPassword ? 'Enviando instruções...' : 'Esqueci minha senha'}
+                            </button>
+                        </div>
+                    )}
 
                     {isRegistering && (
                         <div className="relative animate-in slide-in-from-top-2 fade-in duration-300">

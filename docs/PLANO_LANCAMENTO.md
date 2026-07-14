@@ -83,10 +83,12 @@ atualiza o pedido corretamente e suporta repetição segura do mesmo evento.
 
 ## Etapa 4 — Testes e operação
 
-Status: **não iniciada**
+Status: **em andamento**
 
 - [x] Criar testes das regras do Firestore.
 - [x] Criar testes unitários para cálculo e transições de pedidos.
+- [x] Implementar recuperação de senha e mensagens seguras de autenticação.
+- [x] Autorizar o domínio do Cloudflare Pages para login com Google.
 - [ ] Testar cadastro, login, recuperação de senha e perfil.
 - [ ] Testar produto físico e digital.
 - [ ] Testar PIX e cartão no Sandbox.
@@ -157,6 +159,9 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Webhook Sandbox | Webhook `Alvorecer Mentorias - Checkout` criado, ativo, em API v3 e envio sequencial para o Worker publicado. | Concluído |
 | 14/07/2026 | Eventos Sandbox | `CHECKOUT_PAID`, `CHECKOUT_CANCELED` e `CHECKOUT_EXPIRED` habilitados; fila de sincronização ativa. | Concluído |
 | 14/07/2026 | Segurança Webhook | Token compartilhado somente via secrets; chamada sem credencial rejeitada pela rota publicada com HTTP 401. | Concluído |
+| 14/07/2026 | Firebase Auth | Provedor Google confirmado como ativo e `alvorecermentorias-web.pages.dev` adicionado aos domínios autorizados sem remover os domínios existentes. | Concluído |
+| 14/07/2026 | Recuperação de senha | Fluxo por e-mail implementado em português, com resposta que não revela se a conta existe e tratamento amigável de erros. | Concluído |
+| 14/07/2026 | Testes de autenticação | Testes unitários adicionados para login Google, credenciais e recuperação de senha. | Concluído |
 
 ## Regras de trabalho
 

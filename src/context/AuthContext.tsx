@@ -6,6 +6,7 @@ import {
     GoogleAuthProvider,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
     signOut as firebaseSignOut
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -19,6 +20,7 @@ interface AuthContextType {
     signInWithGoogle: () => Promise<void>;
     loginWithEmail: (email: string, pass: string) => Promise<void>;
     registerWithEmail: (email: string, pass: string, name: string, cpf?: string, birthDate?: string) => Promise<void>;
+    resetPassword: (email: string) => Promise<void>;
     saveUserProfile: (uid: string, data: Partial<UserProfile>) => Promise<void>;
     logout: () => Promise<void>;
 }
@@ -127,6 +129,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserProfile(newProfile);
     }
 
+    const resetPassword = async (email: string) => {
+        if (!isFirebaseConfigured) throw new Error(firebaseConfigurationMessage);
+        auth.languageCode = 'pt-BR';
+        await sendPasswordResetEmail(auth, email.trim());
+    }
+
     const logout = async () => {
         if (!isFirebaseConfigured) {
             setUser(null);
@@ -142,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, userProfile, loading, signInWithGoogle, loginWithEmail, registerWithEmail, saveUserProfile, logout }}>
+        <AuthContext.Provider value={{ user, userProfile, loading, signInWithGoogle, loginWithEmail, registerWithEmail, resetPassword, saveUserProfile, logout }}>
             {!loading && children}
         </AuthContext.Provider>
     );
