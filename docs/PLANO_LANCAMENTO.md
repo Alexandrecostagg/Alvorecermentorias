@@ -25,9 +25,10 @@ ser apresentadas como disponíveis até possuírem fluxo funcional de ponta a po
 - [x] Firebase Authentication e Firestore integrados no frontend.
 - [x] Estrutura do Worker de checkout Asaas criada.
 - [x] Regras do projeto Firebase `alvorecermentorias` verificadas e publicadas.
-- [ ] Worker `alvorecermentorias-payments` publicado.
+- [x] Worker `alvorecermentorias-payments` publicado.
 - [ ] Checkout Asaas validado em Sandbox.
-- [ ] Testes automatizados e fluxo completo de compra implementados.
+- [x] Testes automatizados de regras e pagamentos implementados.
+- [ ] Fluxo completo de compra validado no Sandbox.
 - [ ] Conteúdo, privacidade, contatos e links definitivos revisados.
 
 ## Etapa 1 — Segurança, escopo e configuração
@@ -71,9 +72,9 @@ Status: **em andamento**
 - [x] Tornar o webhook idempotente e recuperável.
 - [x] Modelar checkout pago, cancelado e expirado.
 - [ ] Modelar estorno após a validação do fluxo básico.
-- [ ] Configurar secrets do Worker sem gravá-los no Git.
+- [x] Configurar secrets do Worker sem gravá-los no Git.
 - [x] Publicar `alvorecermentorias-payments`.
-- [ ] Configurar o webhook no Asaas Sandbox.
+- [x] Configurar o webhook no Asaas Sandbox.
 - [ ] Configurar `VITE_PAYMENT_API_BASE_URL` e republicar o frontend.
 - [ ] Confirmar o pagamento pelo webhook, não apenas pela URL de retorno.
 
@@ -85,7 +86,7 @@ atualiza o pedido corretamente e suporta repetição segura do mesmo evento.
 Status: **não iniciada**
 
 - [x] Criar testes das regras do Firestore.
-- [ ] Criar testes unitários para cálculo e transições de pedidos.
+- [x] Criar testes unitários para cálculo e transições de pedidos.
 - [ ] Testar cadastro, login, recuperação de senha e perfil.
 - [ ] Testar produto físico e digital.
 - [ ] Testar PIX e cartão no Sandbox.
@@ -116,9 +117,7 @@ responsável, logs e procedimento de contingência definidos.
 
 Estes itens dependem de acesso ou decisão do proprietário:
 
-- conta Google com acesso ao Firebase `alvorecermentorias`;
-- credenciais Asaas Sandbox e produção;
-- service account Firebase entregue como secret ao Worker;
+- credenciais Asaas de produção;
 - dados oficiais de contato, endereço, redes, Termos e Privacidade;
 - decisão sobre domínio próprio e quais áreas ficarão visíveis no MVP.
 
@@ -151,9 +150,13 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Webhook Asaas | Reconciliação por checkout, idempotência recuperável e proteção contra regressão de pedido pago implementadas. | Concluído |
 | 14/07/2026 | Testes Asaas | Sete testes unitários adicionados para carrinho, endereço, payload, token e transições financeiras. | Concluído |
 | 14/07/2026 | Ferramentas | Projeto migrado para Node 22, Vite 8 e Wrangler 4.110; auditoria npm com zero vulnerabilidades. | Concluído |
-| 14/07/2026 | Cloudflare | Conta confirmada; Worker ainda não existe e os secrets de Sandbox ainda não foram cadastrados. | Em andamento |
+| 14/07/2026 | Cloudflare | Conta confirmada e Worker de pagamentos criado no ambiente `workers.dev`. | Concluído |
 | 14/07/2026 | Deploy Worker | `alvorecermentorias-payments` publicado em `workers.dev`; rota pública verificada. | Concluído |
-| 14/07/2026 | Secrets Worker | Chaves Firebase configuradas sem exposição e arquivo temporário removido; faltam apenas os dois tokens Asaas. | Em andamento |
+| 14/07/2026 | Secrets Worker | Os quatro secrets Firebase/Asaas foram configurados na Cloudflare sem versionar ou persistir seus valores no projeto. | Concluído |
+| 14/07/2026 | Asaas Sandbox | Chave exclusiva `Alvorecer Mentorias Sandbox` criada e vinculada ao secret `ASAAS_ACCESS_TOKEN`. | Concluído |
+| 14/07/2026 | Webhook Sandbox | Webhook `Alvorecer Mentorias - Checkout` criado, ativo, em API v3 e envio sequencial para o Worker publicado. | Concluído |
+| 14/07/2026 | Eventos Sandbox | `CHECKOUT_PAID`, `CHECKOUT_CANCELED` e `CHECKOUT_EXPIRED` habilitados; fila de sincronização ativa. | Concluído |
+| 14/07/2026 | Segurança Webhook | Token compartilhado somente via secrets; chamada sem credencial rejeitada pela rota publicada com HTTP 401. | Concluído |
 
 ## Regras de trabalho
 

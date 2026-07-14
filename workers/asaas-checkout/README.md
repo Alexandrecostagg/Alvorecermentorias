@@ -38,7 +38,7 @@ e o checkout.
 No painel Asaas, crie um webhook apontando para:
 
 ```
-https://SEU-WORKER.workers.dev/webhooks/asaas
+https://alvorecermentorias-payments.alexandrecostagg.workers.dev/webhooks/asaas
 ```
 
 Use exatamente o valor de `ASAAS_WEBHOOK_TOKEN` como token de autenticação do
@@ -51,6 +51,10 @@ CHECKOUT_PAID
 CHECKOUT_CANCELED
 CHECKOUT_EXPIRED
 ```
+
+No Sandbox, o webhook `Alvorecer Mentorias - Checkout` está configurado em
+API v3, ativo, com fila habilitada e envio sequencial. O e-mail operacional
+recebe alertas de falha do Asaas.
 
 O Worker grava o ID de cada evento e seu estado de processamento. Uma
 reentrega já concluída é ignorada; uma reentrega de evento que falhou no meio
