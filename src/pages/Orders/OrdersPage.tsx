@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { db } from '../../lib/firebase'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { Order } from '../../types'
-import { Package, Truck, CheckCircle, Clock, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
+import { Package, Truck, CheckCircle, Clock, Calendar, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import ProductImage from '../../components/ui/ProductImage'
+import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '../../lib/orders'
+
+const steps = [
+    { status: 'pending', label: 'Pendente', icon: Clock },
+    { status: 'paid', label: 'Pago', icon: CheckCircle },
+    { status: 'processing', label: 'Em separação', icon: Package },
+    { status: 'shipping', label: 'Enviado', icon: Truck },
+    { status: 'delivered', label: 'Entregue', icon: CheckCircle },
+]
 
 export default function OrdersPage() {
     const { user } = useAuth()
@@ -14,45 +23,26 @@ export default function OrdersPage() {
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
 
     useEffect(() => {
-        async function fetchOrders() {
-            if (!user) return
-            try {
-                const q = query(
-                    collection(db, 'orders'),
-                    where('userId', '==', user.uid),
-                    // Note: Composite index might be required for where + orderBy
-                    // If it fails, remove orderBy and sort in client
-                )
+        if (!user) return
 
-                const snapshot = await getDocs(q)
+        const ordersQuery = query(collection(db, 'orders'), where('userId', '==', user.uid))
+        return onSnapshot(ordersQuery, snapshot => {
                 const loadedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order))
-
-                // Client-side sorting to avoid index requirement for now
                 loadedOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
                 setOrders(loadedOrders)
-            } catch (error) {
-                console.error("Erro ao buscar pedidos:", error)
-            } finally {
                 setLoading(false)
-            }
-        }
-
-        fetchOrders()
+        }, error => {
+            console.error('Erro ao buscar pedidos:', error)
+            setLoading(false)
+        })
     }, [user])
 
     const toggleOrder = (orderId: string) => {
         setExpandedOrder(expandedOrder === orderId ? null : orderId)
     }
 
-    const steps = [
-        { status: 'pending', label: 'Pendente', icon: Clock },
-        { status: 'paid', label: 'Pago', icon: CheckCircle },
-        { status: 'shipping', label: 'Enviado', icon: Truck },
-        { status: 'delivered', label: 'Entregue', icon: Package },
-    ]
-
     const getStepStatus = (orderStatus: string, stepStatus: string) => {
+        if (orderStatus === 'cancelled') return 'upcoming'
         const orderIndex = steps.findIndex(s => s.status === orderStatus)
         const stepIndex = steps.findIndex(s => s.status === stepStatus)
 
@@ -109,12 +99,8 @@ export default function OrdersPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-                                            ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                                                order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                    'bg-blue-100 text-blue-700'}
-                                        `}>
-                                            {steps.find(s => s.status === order.status)?.label || order.status}
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${ORDER_STATUS_COLORS[order.status]}`}>
+                                            {ORDER_STATUS_LABELS[order.status]}
                                         </span>
                                         <div className="font-bold text-lg text-slate-900">
                                             R$ {order.total.toFixed(2)}
@@ -131,10 +117,10 @@ export default function OrdersPage() {
                                         <div className="py-8">
                                             <div className="relative">
                                                 <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -translate-y-1/2 rounded-full" />
-                                                <div
+                                                {order.status !== 'cancelled' && <div
                                                     className="absolute top-1/2 left-0 h-1 bg-green-500 -translate-y-1/2 rounded-full transition-all duration-1000"
-                                                    style={{ width: `${((steps.findIndex(s => s.status === order.status) / (steps.length - 1)) * 100)}%` }}
-                                                />
+                                                    style={{ width: `${(Math.max(0, steps.findIndex(s => s.status === order.status)) / (steps.length - 1)) * 100}%` }}
+                                                />}
 
                                                 <div className="relative flex justify-between">
                                                     {steps.map((step) => {
@@ -160,6 +146,26 @@ export default function OrdersPage() {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {order.status === 'cancelled' && (
+                                            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                                                Este pedido foi cancelado ou expirou antes da confirmação do pagamento.
+                                            </div>
+                                        )}
+
+                                        {(order.status === 'shipping' || order.status === 'delivered') && order.shipment?.trackingCode && (
+                                            <div className="mb-6 rounded-xl border border-purple-200 bg-purple-50 p-4">
+                                                <h4 className="font-bold text-purple-900 mb-1">Acompanhe seu envio</h4>
+                                                <p className="text-sm text-purple-800">
+                                                    {order.shipment.carrier || 'Transportadora'} · código <strong>{order.shipment.trackingCode}</strong>
+                                                </p>
+                                                {order.shipment.trackingUrl && (
+                                                    <a href={order.shipment.trackingUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-purple-900 hover:underline">
+                                                        Abrir rastreamento <ExternalLink className="h-4 w-4" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Items */}
                                         <div className="space-y-4 bg-slate-50 p-6 rounded-xl">
@@ -189,8 +195,10 @@ export default function OrdersPage() {
                                             <div>
                                                 <h4 className="font-bold text-slate-800 mb-2">Pagamento</h4>
                                                 <div className="text-sm text-slate-600 bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-2">
-                                                    <span className="capitalize">{order.paymentMethod.replace('_', ' ')}</span>
-                                                    <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-bold">Pago</span>
+                                                    <span>{order.paymentMethod === 'pix' ? 'PIX' : order.paymentMethod === 'credit_card' ? 'Cartão' : order.paymentMethod.replace('_', ' ')}</span>
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${ORDER_STATUS_COLORS[order.status]}`}>
+                                                        {order.status === 'pending' ? 'Aguardando confirmação' : order.status === 'cancelled' ? 'Cancelado' : 'Pago'}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>

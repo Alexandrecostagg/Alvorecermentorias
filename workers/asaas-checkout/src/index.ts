@@ -84,7 +84,9 @@ async function createCheckout(request: Request, env: Env) {
   const user = await verifyFirebaseUser(request, env)
   const accessToken = await getGoogleAccessToken(env)
   const products = await loadProducts(items, env, accessToken)
-  const customerData = await loadAsaasCustomerData(user, env, accessToken)
+  const profile = await loadUserProfile(user.uid, env, accessToken)
+  const customerData = buildAsaasCustomerData(user, profile)
+  const orderCustomer = buildOrderCustomer(user, profile)
   const orderId = `order_${crypto.randomUUID()}`
   const total = products.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   const now = new Date().toISOString()
@@ -98,6 +100,7 @@ async function createCheckout(request: Request, env: Env) {
     asaasBillingType: billingType,
     paymentStatus: 'creating_checkout',
     address,
+    customer: orderCustomer,
     createdAt: now,
     updatedAt: now,
   }, env, accessToken)
@@ -164,9 +167,7 @@ async function receiveAsaasWebhook(request: Request, env: Env) {
 
   const orderDocument = await readFirestoreDocument('orders', orderId, env, accessToken)
   const order = fromFirestoreFields(orderDocument.fields || {}) as Record<string, unknown>
-  const orderStatus = order.status === 'paid' && transition.orderStatus !== 'paid'
-    ? 'paid'
-    : transition.orderStatus
+  const orderStatus = resolveOrderStatusAfterPaymentEvent(order.status, transition)
 
   await updateFirestoreDocument('orders', orderId, {
     status: orderStatus,
@@ -257,16 +258,27 @@ async function verifyFirebaseUser(request: Request, env: Env) {
   return { uid: account.localId, email: account.email, name: account.displayName || 'Cliente Alvorecer' }
 }
 
-async function loadAsaasCustomerData(
-  user: { uid: string; email: string; name: string },
+async function loadUserProfile(
+  userId: string,
   env: Env,
   accessToken: string,
-): Promise<AsaasCustomerData | undefined> {
-  const profileDocument = await tryReadFirestoreDocument('users', user.uid, env, accessToken)
+): Promise<Record<string, unknown> | undefined> {
+  const profileDocument = await tryReadFirestoreDocument('users', userId, env, accessToken)
   if (!profileDocument?.fields) return undefined
+  return fromFirestoreFields(profileDocument.fields) as Record<string, unknown>
+}
 
-  const profile = fromFirestoreFields(profileDocument.fields) as Record<string, unknown>
-  return buildAsaasCustomerData(user, profile)
+function buildOrderCustomer(
+  user: { email: string; name: string },
+  profile?: Record<string, unknown>,
+) {
+  const profileName = typeof profile?.name === 'string' ? profile.name.trim() : ''
+  const phone = typeof profile?.phone === 'string' ? profile.phone.trim().slice(0, 30) : ''
+  return {
+    name: profileName || user.name,
+    email: user.email,
+    ...(phone ? { phone } : {}),
+  }
 }
 
 function buildAsaasCustomerData(
@@ -576,6 +588,13 @@ function paymentTransitionFromAsaasEvent(event: string): PaymentTransition | und
   return undefined
 }
 
+function resolveOrderStatusAfterPaymentEvent(currentStatus: unknown, transition: PaymentTransition) {
+  const operationalStatuses = ['paid', 'processing', 'shipping', 'delivered']
+  return typeof currentStatus === 'string' && operationalStatuses.includes(currentStatus)
+    ? currentStatus
+    : transition.orderStatus
+}
+
 function toFirestoreFields(data: Record<string, unknown>) {
   return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined).map(([key, value]) => [key, toFirestoreValue(value)]))
 }
@@ -672,12 +691,14 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 
 export const testables = {
   buildAsaasCustomerData,
+  buildOrderCustomer,
   extractOrderId,
   loadProducts,
   normalizeAddress,
   normalizeBillingType,
   normalizeItems,
   paymentTransitionFromAsaasEvent,
+  resolveOrderStatusAfterPaymentEvent,
   requestAsaasCheckout,
   safeTokenEquals,
 }

@@ -26,9 +26,9 @@ ser apresentadas como disponíveis até possuírem fluxo funcional de ponta a po
 - [x] Estrutura do Worker de checkout Asaas criada.
 - [x] Regras do projeto Firebase `alvorecermentorias` verificadas e publicadas.
 - [x] Worker `alvorecermentorias-payments` publicado.
-- [ ] Checkout Asaas validado em Sandbox.
+- [x] Checkout Asaas validado em Sandbox.
 - [x] Testes automatizados de regras e pagamentos implementados.
-- [ ] Fluxo completo de compra validado no Sandbox.
+- [x] Fluxo completo de compra validado no Sandbox para PIX e cartão.
 - [ ] Conteúdo, privacidade, contatos e links definitivos revisados.
 
 ## Etapa 1 — Segurança, escopo e configuração
@@ -78,7 +78,7 @@ Status: **em andamento**
 - [x] Configurar o webhook no Asaas Sandbox.
 - [x] Configurar `VITE_PAYMENT_API_BASE_URL` e republicar o frontend.
 - [x] Permitir que o cliente escolha PIX ou cartão antes de abrir a Asaas.
-- [ ] Confirmar o pagamento pelo webhook, não apenas pela URL de retorno.
+- [x] Confirmar o pagamento pelo webhook, não apenas pela URL de retorno.
 
 Critério de conclusão: uma compra Sandbox cria checkout, recebe webhook,
 atualiza o pedido corretamente e suporta repetição segura do mesmo evento.
@@ -93,11 +93,16 @@ Status: **em andamento**
 - [x] Autorizar o domínio do Cloudflare Pages para login com Google.
 - [ ] Testar cadastro, login, recuperação de senha e perfil.
 - [ ] Testar produto físico e digital.
-- [ ] Testar PIX e cartão no Sandbox.
+- [x] Testar PIX e cartão no Sandbox.
 - [ ] Testar cancelamento, expiração, falha e webhook duplicado.
 - [ ] Testar permissões de cliente e administrador.
 - [ ] Adicionar logs e procedimento de suporte/estorno.
 - [ ] Configurar verificação automática antes do deploy.
+- [x] Exibir ficha operacional do pedido com cliente, itens e endereço completo.
+- [x] Implementar o fluxo `Pago → Em separação → Enviado → Entregue`.
+- [x] Registrar transportadora, código e link de rastreio no pedido.
+- [x] Exibir o rastreamento na área do cliente em tempo real.
+- [ ] Integrar cotação, etiqueta e rastreamento automático com o Melhor Envio.
 
 Critério de conclusão: matriz crítica aprovada e erros operacionais visíveis
 nos logs sem expor dados pessoais ou segredos.
@@ -169,6 +174,12 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Integração do frontend | URL pública do Worker configurada no build do Pages para iniciar o checkout Sandbox. | Concluído |
 | 14/07/2026 | Compatibilidade do carrinho | Worker preparado para migrar IDs numéricos legados para os documentos atuais do catálogo antes de criar o pedido. | Concluído |
 | 14/07/2026 | Dados do pagador | `customerData` enviado à Asaas somente com CPF válido; sem documento no perfil, a coleta fica no checkout hospedado. | Concluído |
+| 14/07/2026 | Compra Sandbox PIX | Checkout pago, webhook `CHECKOUT_PAID` processado e pedido confirmado no Firestore. | Concluído |
+| 14/07/2026 | Compra Sandbox cartão | Pagamento confirmado no checkout hospedado, webhook processado e pedido atualizado no Firestore. | Concluído |
+| 14/07/2026 | Operação de pedidos | Ficha do cliente, endereço, itens, filtros e exportação operacional adicionados ao painel. | Concluído |
+| 14/07/2026 | Expedição | Fluxo de separação, envio, transportadora, rastreio e entrega implementado sem permitir aprovação manual de pagamento. | Concluído |
+| 14/07/2026 | Área do cliente | Pedidos passam a atualizar em tempo real e exibem separação, envio e link de rastreamento. | Concluído |
+| 14/07/2026 | Logística | Melhor Envio escolhido para a próxima integração por cobrir cotação, compra, etiqueta e rastreamento via API. | Planejado |
 
 ## Regras de trabalho
 

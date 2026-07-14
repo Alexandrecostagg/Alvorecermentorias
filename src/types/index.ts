@@ -43,7 +43,20 @@ export type UserProfile = {
   createdAt: Date
 }
 
-export type OrderStatus = 'pending' | 'paid' | 'shipping' | 'delivered' | 'cancelled'
+export type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipping' | 'delivered' | 'cancelled'
+
+export type OrderCustomer = {
+  name?: string
+  email?: string
+  phone?: string
+}
+
+export type OrderShipment = {
+  carrier?: string
+  trackingCode?: string
+  trackingUrl?: string
+  shippedAt?: string
+}
 
 export type Order = {
   id: string
@@ -57,4 +70,9 @@ export type Order = {
   paymentMethod: 'credit_card' | 'pix' | 'boleto' | 'asaas'
   address: Address
   createdAt: string
+  updatedAt?: string
+  processingAt?: string
+  deliveredAt?: string
+  customer?: OrderCustomer
+  shipment?: OrderShipment
 }

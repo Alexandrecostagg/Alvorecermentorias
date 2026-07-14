@@ -3,6 +3,7 @@ import { db } from '../../lib/firebase'
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
 import { Order } from '../../types'
 import { DollarSign, Package, ShoppingBag, TrendingUp } from 'lucide-react'
+import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '../../lib/orders'
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
@@ -26,8 +27,8 @@ export default function AdminDashboard() {
 
                 allOrdersSnap.docs.forEach(doc => {
                     const data = doc.data() as Order
-                    revenue += data.total
-                    if (data.status === 'pending') pending++
+                    if (['paid', 'processing', 'shipping', 'delivered'].includes(data.status)) revenue += data.total
+                    if (data.status === 'paid' || data.status === 'processing') pending++
                 })
 
                 // Products
@@ -64,7 +65,6 @@ export default function AdminDashboard() {
                         <div className="bg-green-100 p-3 rounded-xl">
                             <DollarSign className="h-6 w-6 text-green-600" />
                         </div>
-                        <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">+12%</span>
                     </div>
                     <p className="text-slate-500 text-sm font-medium">Receita Total</p>
                     <h3 className="text-2xl font-bold text-slate-900">R$ {stats.totalRevenue.toFixed(2)}</h3>
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
                             <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Ação Necessária</span>
                         )}
                     </div>
-                    <p className="text-slate-500 text-sm font-medium">Pedidos Pendentes</p>
+                    <p className="text-slate-500 text-sm font-medium">Aguardando envio</p>
                     <h3 className="text-2xl font-bold text-slate-900">{stats.pendingOrders}</h3>
                 </div>
 
@@ -123,14 +123,10 @@ export default function AdminDashboard() {
                             {recentOrders.map(order => (
                                 <tr key={order.id} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4 font-mono text-sm text-slate-500">#{order.id.slice(0, 8)}</td>
-                                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{order.address?.recipient || 'Cliente'}</td>
+                                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{order.customer?.name || order.address?.recipient || 'Cliente'}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold
-                                            ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                                                order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                                                    'bg-blue-100 text-blue-700'}
-                                        `}>
-                                            {order.status}
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${ORDER_STATUS_COLORS[order.status]}`}>
+                                            {ORDER_STATUS_LABELS[order.status]}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right text-sm font-bold text-slate-900">R$ {order.total.toFixed(2)}</td>

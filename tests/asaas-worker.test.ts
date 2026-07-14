@@ -114,6 +114,17 @@ describe('Asaas Worker', () => {
     )).toBeUndefined()
   })
 
+  it('salva no pedido os dados operacionais do cliente sem copiar o CPF', () => {
+    expect(testables.buildOrderCustomer(
+      { name: 'Nome do login', email: 'cliente@example.com' },
+      { name: 'Cliente Teste', phone: '(11) 99999-9999', cpf: '529.982.247-25' },
+    )).toEqual({
+      name: 'Cliente Teste',
+      email: 'cliente@example.com',
+      phone: '(11) 99999-9999',
+    })
+  })
+
   it('mapeia apenas eventos financeiros conhecidos', () => {
     expect(testables.paymentTransitionFromAsaasEvent('CHECKOUT_PAID')).toEqual({
       orderStatus: 'paid',
@@ -128,6 +139,15 @@ describe('Asaas Worker', () => {
       checkoutStatus: 'EXPIRED',
     })
     expect(testables.paymentTransitionFromAsaasEvent('CHECKOUT_CREATED')).toBeUndefined()
+  })
+
+  it('não regride o andamento logístico quando chega outro evento financeiro', () => {
+    const paidTransition = { orderStatus: 'paid' as const, checkoutStatus: 'PAID' as const }
+    const cancelledTransition = { orderStatus: 'cancelled' as const, checkoutStatus: 'CANCELED' as const }
+
+    expect(testables.resolveOrderStatusAfterPaymentEvent('processing', paidTransition)).toBe('processing')
+    expect(testables.resolveOrderStatusAfterPaymentEvent('shipping', cancelledTransition)).toBe('shipping')
+    expect(testables.resolveOrderStatusAfterPaymentEvent('pending', paidTransition)).toBe('paid')
   })
 
   it('extrai a referência do pedido em diferentes formatos de webhook', () => {
