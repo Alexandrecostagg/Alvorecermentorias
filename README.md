@@ -14,6 +14,7 @@ produtos da linha Kids.
 ## Requisitos
 
 - Node.js 20 ou superior;
+- Java 21 ou superior para o Firestore Emulator;
 - npm;
 - acesso ao projeto Firebase correto;
 - conta Cloudflare com acesso ao Pages, R2 e Workers.
@@ -46,6 +47,7 @@ para a origem pública do bucket R2.
 npm run dev
 npm run typecheck
 npm run lint
+npm run test:rules
 npm run build
 npm run preview
 ```
@@ -68,6 +70,7 @@ de produção.
 ## Segurança
 
 - Regras do Firestore: `firestore.rules`.
+- Testes das regras: `tests/firestore.rules.test.ts`.
 - Variáveis locais, `.dev.vars` e diretório `.wrangler` são ignorados pelo Git.
 - O Worker recalcula preços pelo Firestore; valores enviados pelo navegador não
   devem ser considerados confiáveis.

@@ -24,7 +24,7 @@ ser apresentadas como disponíveis até possuírem fluxo funcional de ponta a po
 - [x] Frontend publicado no Cloudflare Pages.
 - [x] Firebase Authentication e Firestore integrados no frontend.
 - [x] Estrutura do Worker de checkout Asaas criada.
-- [ ] Regras do projeto Firebase `alvorecermentorias` verificadas e publicadas.
+- [x] Regras do projeto Firebase `alvorecermentorias` verificadas e publicadas.
 - [ ] Worker `alvorecermentorias-payments` publicado.
 - [ ] Checkout Asaas validado em Sandbox.
 - [ ] Testes automatizados e fluxo completo de compra implementados.
@@ -32,12 +32,12 @@ ser apresentadas como disponíveis até possuírem fluxo funcional de ponta a po
 
 ## Etapa 1 — Segurança, escopo e configuração
 
-Status: **em andamento**
+Status: **concluída**
 
 - [x] Registrar o plano e a linha de base técnica.
-- [ ] Confirmar acesso do Firebase CLI ao projeto `alvorecermentorias` — bloqueado: a conta ativa `infinitygravitycode@gmail.com` só enxerga `alvorecerflutterapp`.
-- [ ] Testar as regras do Firestore no Emulator.
-- [ ] Publicar as regras do Firestore no projeto correto.
+- [x] Confirmar acesso do Firebase CLI ao projeto `alvorecermentorias`.
+- [x] Testar as regras do Firestore no Emulator.
+- [x] Publicar as regras do Firestore no projeto correto.
 - [x] Atualizar dependências com vulnerabilidades conhecidas.
 - [x] Resolver erros de lint que afetem o código ativo.
 - [x] Remover configurações geradas, duplicadas ou obsoletas do Git.
@@ -83,7 +83,7 @@ atualiza o pedido corretamente e suporta repetição segura do mesmo evento.
 
 Status: **não iniciada**
 
-- [ ] Criar testes das regras do Firestore.
+- [x] Criar testes das regras do Firestore.
 - [ ] Criar testes unitários para cálculo e transições de pedidos.
 - [ ] Testar cadastro, login, recuperação de senha e perfil.
 - [ ] Testar produto físico e digital.
@@ -137,6 +137,9 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | UX móvel | Menu responsivo implementado com rotas públicas e opções autenticadas. | Concluído |
 | 14/07/2026 | Documentação | README refeito com arquitetura, ambiente, comandos e política de secrets. | Concluído |
 | 14/07/2026 | Git | Primeiro lote do plano salvo no commit `fd59ea1` e enviado para `origin/main`. | Concluído |
+| 14/07/2026 | Firebase | Acesso de `infinitygravitycode@gmail.com` ao projeto `alvorecermentorias` confirmado. | Concluído |
+| 14/07/2026 | Testes de regras | Firestore Emulator executado com Java 21; 12 de 12 testes aprovados. | Concluído |
+| 14/07/2026 | Deploy Firebase | Regras compiladas e publicadas no projeto `alvorecermentorias`. | Concluído |
 
 ## Regras de trabalho
 
