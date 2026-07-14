@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
-import { Trash2, ArrowRight, ShoppingBag, Minus, Plus, Ticket, Loader2 } from 'lucide-react'
+import { Trash2, ArrowRight, ShoppingBag, Minus, Plus, Loader2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import AddressSelector from '../../components/checkout/AddressSelector'
 import PaymentSelector from '../../components/checkout/PaymentSelector'
-import { publicMedia } from '../../lib/media'
 import { startAsaasCheckout } from '../../lib/payments'
+import ProductImage from '../../components/ui/ProductImage'
 
 export default function CheckoutPage() {
     const { items, removeItem, updateQuantity, totalPrice, clear } = useCart()
@@ -14,11 +14,13 @@ export default function CheckoutPage() {
 
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
     const [isProcessing, setIsProcessing] = useState(false)
+    const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
     const handleCheckout = async () => {
         if (!user || !selectedAddressId) return
 
         setIsProcessing(true)
+        setCheckoutError(null)
 
         try {
             // Find full address object
@@ -26,17 +28,18 @@ export default function CheckoutPage() {
 
             if (!deliveryAddress) throw new Error('Selecione um endereço de entrega válido.')
 
-            const checkoutUrl = await startAsaasCheckout({
+            const { checkoutUrl, orderId } = await startAsaasCheckout({
                 user,
                 items,
                 address: deliveryAddress,
             })
 
+            sessionStorage.setItem('alvorecer:last-order-id', orderId)
             window.location.assign(checkoutUrl)
 
         } catch (error) {
-            console.error("Erro ao processar pedido:", error)
-            alert(error instanceof Error ? error.message : 'Houve um erro ao iniciar o pagamento. Tente novamente.')
+            console.error('Erro ao processar pedido:', error)
+            setCheckoutError(error instanceof Error ? error.message : 'Houve um erro ao iniciar o pagamento. Tente novamente.')
         } finally {
             setIsProcessing(false)
         }
@@ -86,7 +89,7 @@ export default function CheckoutPage() {
                         {items.map((item) => (
                             <div key={item.product.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
                                 <div className="h-24 w-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden">
-                                    <img src={publicMedia(item.product.image)} alt={item.product.title} className="h-full w-full object-cover" />
+                                    <ProductImage src={item.product.image} alt={item.product.title} className="h-full w-full object-cover" />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
@@ -96,6 +99,8 @@ export default function CheckoutPage() {
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center border border-slate-200 rounded-lg">
                                             <button
+                                                type="button"
+                                                aria-label={`Diminuir quantidade de ${item.product.title}`}
                                                 onClick={() => updateQuantity(item.product.id, item.qty - 1)}
                                                 className="p-1 hover:bg-slate-100 transition-colors disabled:opacity-50"
                                                 disabled={item.qty <= 1}
@@ -104,8 +109,11 @@ export default function CheckoutPage() {
                                             </button>
                                             <span className="w-8 text-center text-sm font-semibold">{item.qty}</span>
                                             <button
+                                                type="button"
+                                                aria-label={`Aumentar quantidade de ${item.product.title}`}
                                                 onClick={() => updateQuantity(item.product.id, item.qty + 1)}
                                                 className="p-1 hover:bg-slate-100 transition-colors"
+                                                disabled={item.qty >= 20}
                                             >
                                                 <Plus className="h-4 w-4 text-slate-600" />
                                             </button>
@@ -117,6 +125,8 @@ export default function CheckoutPage() {
                                 </div>
 
                                 <button
+                                    type="button"
+                                    aria-label={`Remover ${item.product.title} do carrinho`}
                                     onClick={() => removeItem(item.product.id)}
                                     className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors self-start"
                                     title="Remover item"
@@ -127,6 +137,7 @@ export default function CheckoutPage() {
                         ))}
 
                         <button
+                            type="button"
                             onClick={clear}
                             className="text-sm text-red-500 hover:underline px-2"
                         >
@@ -138,22 +149,12 @@ export default function CheckoutPage() {
                     <div className="md:col-span-1">
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-24">
 
-                            {/* Stock Timer Mock */}
-                            <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold text-center mb-6 border border-red-100 animate-pulse">
-                                Reservado por 14:59 min
-                            </div>
-
                             <h3 className="text-lg font-bold text-slate-900 mb-4">Resumo do Pedido</h3>
 
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-slate-600">
                                     <span>Subtotal</span>
                                     <span>R$ {totalPrice.toFixed(2)}</span>
-                                </div>
-
-                                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded-lg text-xs font-semibold">
-                                    <Ticket className="h-4 w-4" />
-                                    <span>Desconto progressivo (Em breve)</span>
                                 </div>
 
                                 <div className="flex justify-between text-slate-600">
@@ -172,7 +173,14 @@ export default function CheckoutPage() {
                                 </div>
                             )}
 
+                            {checkoutError && (
+                                <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                                    {checkoutError}
+                                </div>
+                            )}
+
                             <button
+                                type="button"
                                 onClick={handleCheckout}
                                 disabled={!selectedAddressId || isProcessing}
                                 className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"

@@ -50,7 +50,7 @@ publicadas e nenhuma funcionalidade inexistente apresentada como disponível.
 
 Status: **em andamento**
 
-- [ ] Remover produtos duplicados no Firestore.
+- [x] Remover produtos duplicados no Firestore.
 - [ ] Substituir imagens quebradas por arquivos do R2.
 - [x] Criar navegação móvel.
 - [x] Transformar filtros móveis em painel recolhível.
@@ -65,11 +65,12 @@ sem imagens quebradas, dados provisórios ou controles sem função.
 
 ## Etapa 3 — Checkout Asaas em Sandbox
 
-Status: **não iniciada**
+Status: **em andamento**
 
-- [ ] Corrigir compensação de falhas na criação do checkout.
-- [ ] Tornar o webhook idempotente e recuperável.
-- [ ] Modelar pagamento aprovado, cancelado, expirado e estornado.
+- [x] Corrigir compensação de falhas na criação do checkout.
+- [x] Tornar o webhook idempotente e recuperável.
+- [x] Modelar checkout pago, cancelado e expirado.
+- [ ] Modelar estorno após a validação do fluxo básico.
 - [ ] Configurar secrets do Worker sem gravá-los no Git.
 - [ ] Publicar `alvorecermentorias-payments`.
 - [ ] Configurar o webhook no Asaas Sandbox.
@@ -145,6 +146,12 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | UX da loja | Busca, ordenação, filtros móveis, estados vazio/erro e modal de produto revisados. | Concluído |
 | 14/07/2026 | Imagens | Fallback visual implementado para URLs indisponíveis; três arquivos próprios ainda precisam ser enviados ao R2. | Parcial |
 | 14/07/2026 | Limpeza de dados | Lote exato de 12 documentos registrado em `AUDITORIA_CATALOGO.md`; exclusão aguarda confirmação. | Aguardando aprovação |
+| 14/07/2026 | Limpeza de dados | Backup validado criado e 12 registros excedentes removidos; catálogo final com 6 itens de Loja e 6 de Kids. | Concluído |
+| 14/07/2026 | Worker Asaas | Payload alinhado à API atual, `User-Agent` incluído e compensação de falhas implementada. | Concluído |
+| 14/07/2026 | Webhook Asaas | Reconciliação por checkout, idempotência recuperável e proteção contra regressão de pedido pago implementadas. | Concluído |
+| 14/07/2026 | Testes Asaas | Sete testes unitários adicionados para carrinho, endereço, payload, token e transições financeiras. | Concluído |
+| 14/07/2026 | Ferramentas | Projeto migrado para Node 22, Vite 8 e Wrangler 4.110; auditoria npm com zero vulnerabilidades. | Concluído |
+| 14/07/2026 | Cloudflare | Conta confirmada; Worker ainda não existe e os secrets de Sandbox ainda não foram cadastrados. | Em andamento |
 
 ## Regras de trabalho
 

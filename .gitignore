@@ -30,3 +30,4 @@ vite.config.d.ts
 .env
 .wrangler
 .dev.vars
+backups/

@@ -33,10 +33,10 @@ export async function startAsaasCheckout({ user, items, address }: StartCheckout
     }),
   })
 
-  const body = await response.json().catch(() => ({})) as { checkoutUrl?: string; error?: string }
-  if (!response.ok || !body.checkoutUrl) {
+  const body = await response.json().catch(() => ({})) as { orderId?: string; checkoutUrl?: string; error?: string }
+  if (!response.ok || !body.orderId || !body.checkoutUrl) {
     throw new Error(body.error || 'Não foi possível iniciar o pagamento.')
   }
 
-  return body.checkoutUrl
+  return { orderId: body.orderId, checkoutUrl: body.checkoutUrl }
 }

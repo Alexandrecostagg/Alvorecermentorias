@@ -19,6 +19,10 @@ type AddressInput = {
   zipCode?: string
 }
 type GoogleTokenCache = { token: string; expiresAt: number }
+type PaymentTransition = {
+  orderStatus: 'paid' | 'cancelled'
+  checkoutStatus: 'PAID' | 'CANCELED' | 'EXPIRED'
+}
 
 let googleTokenCache: GoogleTokenCache | undefined
 
@@ -82,25 +86,45 @@ async function createCheckout(request: Request, env: Env) {
     total: roundMoney(total),
     status: 'pending',
     paymentMethod: 'asaas',
+    paymentStatus: 'creating_checkout',
     address,
     createdAt: now,
     updatedAt: now,
   }, env, accessToken)
 
-  const asaasCheckout = await requestAsaasCheckout({ orderId, products, user, address }, env)
+  let asaasCheckout: { id: string; link: string; status: string }
+  try {
+    asaasCheckout = await requestAsaasCheckout({ orderId, products, user }, env)
+  } catch (error) {
+    await markCheckoutFailure(orderId, env, accessToken)
+    throw error
+  }
 
-  await updateFirestoreDocument('orders', orderId, {
-    asaasCheckoutId: asaasCheckout.id,
-    paymentStatus: 'awaiting_payment',
-    updatedAt: new Date().toISOString(),
-  }, env, accessToken)
+  try {
+    await createFirestoreDocument('checkoutOrders', asaasCheckout.id, {
+      orderId,
+      createdAt: new Date().toISOString(),
+    }, env, accessToken)
+    await updateFirestoreDocument('orders', orderId, {
+      asaasCheckoutId: asaasCheckout.id,
+      asaasCheckoutUrl: asaasCheckout.link,
+      asaasCheckoutStatus: asaasCheckout.status,
+      paymentStatus: 'awaiting_payment',
+      updatedAt: new Date().toISOString(),
+    }, env, accessToken)
+  } catch {
+    console.error('Failed to associate Asaas checkout with order', orderId)
+    await cancelAsaasCheckout(asaasCheckout.id, env)
+    await markCheckoutFailure(orderId, env, accessToken)
+    throw new HttpError(502, 'O checkout foi cancelado porque não foi possível registrar a cobrança com segurança.')
+  }
 
   return { orderId, checkoutUrl: asaasCheckout.link }
 }
 
 async function receiveAsaasWebhook(request: Request, env: Env) {
   ensureConfigured(env, ['ASAAS_WEBHOOK_TOKEN', 'FIREBASE_SERVICE_ACCOUNT_JSON'])
-  if (request.headers.get('asaas-access-token') !== env.ASAAS_WEBHOOK_TOKEN) {
+  if (!safeTokenEquals(request.headers.get('asaas-access-token'), env.ASAAS_WEBHOOK_TOKEN)) {
     throw new HttpError(401, 'Webhook não autorizado.')
   }
 
@@ -109,22 +133,41 @@ async function receiveAsaasWebhook(request: Request, env: Env) {
   }) as Record<string, unknown>
   const eventId = typeof payload.id === 'string' ? payload.id : undefined
   const event = typeof payload.event === 'string' ? payload.event : 'UNKNOWN'
-  const orderId = extractOrderId(payload)
-  if (!eventId || !orderId) return { received: true, ignored: true }
+  const transition = paymentTransitionFromAsaasEvent(event)
+  if (!eventId || !transition) return { received: true, ignored: true }
 
   const accessToken = await getGoogleAccessToken(env)
+  const orderId = await resolveOrderId(payload, env, accessToken)
+  if (!orderId) return { received: true, ignored: true }
+
   const inserted = await createFirestoreDocument('paymentEvents', eventId, {
     event,
     orderId,
     receivedAt: new Date().toISOString(),
+    processed: false,
   }, env, accessToken, true)
-  if (!inserted) return { received: true, duplicate: true }
+  if (!inserted) {
+    const existingEvent = await readFirestoreDocument('paymentEvents', eventId, env, accessToken)
+    const existingData = fromFirestoreFields(existingEvent.fields || {}) as Record<string, unknown>
+    if (existingData.processed === true) return { received: true, duplicate: true }
+  }
+
+  const orderDocument = await readFirestoreDocument('orders', orderId, env, accessToken)
+  const order = fromFirestoreFields(orderDocument.fields || {}) as Record<string, unknown>
+  const orderStatus = order.status === 'paid' && transition.orderStatus !== 'paid'
+    ? 'paid'
+    : transition.orderStatus
 
   await updateFirestoreDocument('orders', orderId, {
-    status: orderStatusFromAsaasEvent(event),
+    status: orderStatus,
     paymentStatus: event,
+    asaasCheckoutStatus: transition.checkoutStatus,
     asaasEventId: eventId,
     updatedAt: new Date().toISOString(),
+  }, env, accessToken)
+  await updateFirestoreDocument('paymentEvents', eventId, {
+    processed: true,
+    processedAt: new Date().toISOString(),
   }, env, accessToken)
 
   return { received: true }
@@ -135,7 +178,7 @@ function normalizeItems(value: unknown): CheckoutItemRequest[] {
     throw new HttpError(400, 'Informe entre 1 e 20 itens.')
   }
 
-  return value.map((item) => {
+  const normalized = value.map((item) => {
     const candidate = item as Partial<CheckoutItemRequest>
     const productId = typeof candidate.productId === 'string' ? candidate.productId.trim() : ''
     const quantity = Number(candidate.quantity)
@@ -144,6 +187,14 @@ function normalizeItems(value: unknown): CheckoutItemRequest[] {
     }
     return { productId, quantity }
   })
+
+  const grouped = new Map<string, number>()
+  for (const item of normalized) {
+    const quantity = (grouped.get(item.productId) || 0) + item.quantity
+    if (quantity > 20) throw new HttpError(400, 'A quantidade máxima por produto é 20.')
+    grouped.set(item.productId, quantity)
+  }
+  return [...grouped.entries()].map(([productId, quantity]) => ({ productId, quantity }))
 }
 
 function normalizeAddress(value: unknown): AddressInput {
@@ -158,7 +209,14 @@ function normalizeAddress(value: unknown): AddressInput {
     state: cleanText(address.state)?.toUpperCase(),
     zipCode: cleanText(address.zipCode)?.replace(/\D/g, ''),
   }
-  if (!normalized.street || !normalized.number || !normalized.city || !normalized.state || !normalized.zipCode) {
+  if (
+    !normalized.street
+    || !normalized.number
+    || !normalized.neighborhood
+    || !normalized.city
+    || !/^[A-Z]{2}$/.test(normalized.state || '')
+    || !/^\d{8}$/.test(normalized.zipCode || '')
+  ) {
     throw new HttpError(400, 'Preencha um endereço de entrega completo.')
   }
   return normalized
@@ -189,8 +247,16 @@ async function loadProducts(items: CheckoutItemRequest[], env: Env, accessToken:
     const document = await readFirestoreDocument('products', productId, env, accessToken)
     const data = fromFirestoreFields(document.fields as Record<string, unknown>) as Record<string, unknown>
     const price = Number(data.price)
+    const stock = data.stock === undefined ? undefined : Number(data.stock)
     const title = typeof data.title === 'string' ? data.title : ''
-    if (!title || !Number.isFinite(price) || price < 0 || data.active === false || data.ativo === false) {
+    if (
+      !title
+      || !Number.isFinite(price)
+      || price <= 0
+      || data.active === false
+      || data.ativo === false
+      || (stock !== undefined && (!Number.isFinite(stock) || stock < quantity))
+    ) {
       throw new HttpError(400, 'Um item do carrinho não está disponível.')
     }
 
@@ -213,7 +279,6 @@ async function requestAsaasCheckout(
     orderId: string
     products: Array<{ quantity: number; product: { id: string; title: string; price: number; description?: string } }>
     user: { email: string; name: string }
-    address: AddressInput
   },
   env: Env,
 ) {
@@ -223,6 +288,7 @@ async function requestAsaasCheckout(
     headers: {
       accept: 'application/json',
       'content-type': 'application/json',
+      'User-Agent': 'AlvorecerMentorias/0.1 (Cloudflare Workers)',
       access_token: env.ASAAS_ACCESS_TOKEN,
     },
     body: JSON.stringify({
@@ -245,24 +311,47 @@ async function requestAsaasCheckout(
       customerData: {
         name: data.user.name,
         email: data.user.email,
-        postalCode: data.address.zipCode,
-        address: data.address.street,
-        addressNumber: data.address.number,
-        complement: data.address.complement,
-        province: data.address.neighborhood,
-        city: data.address.city,
-        state: data.address.state,
       },
     }),
   })
 
-  const result = await response.json() as { id?: string; link?: string; errors?: Array<{ description?: string }> }
+  const result = await response.json() as { id?: string; link?: string; status?: string; errors?: Array<{ description?: string }> }
   if (!response.ok || !result.id || !result.link) {
-    console.error('Asaas checkout error', result)
+    console.error('Asaas checkout error', response.status, result.errors?.[0]?.description)
     throw new HttpError(502, result.errors?.[0]?.description || 'A Asaas não conseguiu criar o checkout.')
   }
 
-  return { id: result.id, link: result.link }
+  return { id: result.id, link: result.link, status: result.status || 'ACTIVE' }
+}
+
+async function cancelAsaasCheckout(checkoutId: string, env: Env) {
+  try {
+    const response = await fetch(`${env.ASAAS_API_BASE_URL.replace(/\/$/, '')}/checkouts/${encodeURIComponent(checkoutId)}/cancel`, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'User-Agent': 'AlvorecerMentorias/0.1 (Cloudflare Workers)',
+        access_token: env.ASAAS_ACCESS_TOKEN,
+      },
+      body: '{}',
+    })
+    if (!response.ok) console.error('Failed to cancel orphan Asaas checkout', checkoutId, response.status)
+  } catch {
+    console.error('Failed to reach Asaas while cancelling orphan checkout', checkoutId)
+  }
+}
+
+async function markCheckoutFailure(orderId: string, env: Env, accessToken: string) {
+  try {
+    await updateFirestoreDocument('orders', orderId, {
+      status: 'cancelled',
+      paymentStatus: 'checkout_failed',
+      updatedAt: new Date().toISOString(),
+    }, env, accessToken)
+  } catch {
+    console.error('Failed to mark checkout failure on order', orderId)
+  }
 }
 
 async function getGoogleAccessToken(env: Env) {
@@ -300,8 +389,15 @@ async function getGoogleAccessToken(env: Env) {
 
 async function readFirestoreDocument(collection: string, documentId: string, env: Env, accessToken: string) {
   const response = await fetch(firestoreDocumentUrl(collection, documentId, env), { headers: { Authorization: `Bearer ${accessToken}` } })
-  if (response.status === 404) throw new HttpError(400, 'Um item do carrinho não existe mais.')
+  if (response.status === 404) throw new HttpError(404, 'Documento não encontrado.')
   if (!response.ok) throw new Error('Não foi possível consultar o catálogo.')
+  return response.json() as Promise<{ fields?: Record<string, unknown> }>
+}
+
+async function tryReadFirestoreDocument(collection: string, documentId: string, env: Env, accessToken: string) {
+  const response = await fetch(firestoreDocumentUrl(collection, documentId, env), { headers: { Authorization: `Bearer ${accessToken}` } })
+  if (response.status === 404) return undefined
+  if (!response.ok) throw new Error('Não foi possível consultar o Firestore.')
   return response.json() as Promise<{ fields?: Record<string, unknown> }>
 }
 
@@ -350,10 +446,31 @@ function extractOrderId(payload: Record<string, unknown>) {
   return candidates.find((value): value is string => typeof value === 'string' && value.startsWith('order_'))
 }
 
-function orderStatusFromAsaasEvent(event: string) {
-  if (event.includes('PAID') || event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') return 'paid'
-  if (event.includes('CANCEL') || event.includes('EXPIRED') || event.includes('DELETED')) return 'cancelled'
-  return 'pending'
+async function resolveOrderId(payload: Record<string, unknown>, env: Env, accessToken: string) {
+  const externalReference = extractOrderId(payload)
+  if (externalReference) return externalReference
+
+  const checkout = payload.checkout as Record<string, unknown> | undefined
+  const checkoutId = typeof checkout?.id === 'string' ? checkout.id : undefined
+  if (!checkoutId) return undefined
+
+  const mapping = await tryReadFirestoreDocument('checkoutOrders', checkoutId, env, accessToken)
+  if (!mapping) return undefined
+  const data = fromFirestoreFields(mapping.fields || {}) as Record<string, unknown>
+  return typeof data.orderId === 'string' && data.orderId.startsWith('order_') ? data.orderId : undefined
+}
+
+function paymentTransitionFromAsaasEvent(event: string): PaymentTransition | undefined {
+  if (event === 'CHECKOUT_PAID' || event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
+    return { orderStatus: 'paid', checkoutStatus: 'PAID' }
+  }
+  if (event === 'CHECKOUT_CANCELED' || event === 'PAYMENT_DELETED') {
+    return { orderStatus: 'cancelled', checkoutStatus: 'CANCELED' }
+  }
+  if (event === 'CHECKOUT_EXPIRED' || event === 'PAYMENT_OVERDUE') {
+    return { orderStatus: 'cancelled', checkoutStatus: 'EXPIRED' }
+  }
+  return undefined
 }
 
 function toFirestoreFields(data: Record<string, unknown>) {
@@ -414,6 +531,15 @@ function ensureConfigured(env: Env, keys: Array<keyof Env>) {
   if (keys.some((key) => !env[key])) throw new HttpError(500, 'O serviço de pagamento ainda não foi configurado.')
 }
 
+function safeTokenEquals(received: string | null, expected: string) {
+  if (!received || received.length !== expected.length) return false
+  let difference = 0
+  for (let index = 0; index < expected.length; index += 1) {
+    difference |= received.charCodeAt(index) ^ expected.charCodeAt(index)
+  }
+  return difference === 0
+}
+
 function assertAllowedOrigin(request: Request, env: Env) {
   if (request.headers.get('Origin') !== env.APP_ORIGIN) throw new HttpError(403, 'Origem não autorizada.')
 }
@@ -439,4 +565,13 @@ function corsResponse(request: Request, env: Env) {
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), { status, headers: { ...headers, 'Content-Type': 'application/json; charset=utf-8' } })
+}
+
+export const testables = {
+  extractOrderId,
+  normalizeAddress,
+  normalizeItems,
+  paymentTransitionFromAsaasEvent,
+  requestAsaasCheckout,
+  safeTokenEquals,
 }

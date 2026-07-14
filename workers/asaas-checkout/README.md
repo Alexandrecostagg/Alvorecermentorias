@@ -43,9 +43,37 @@ https://SEU-WORKER.workers.dev/webhooks/asaas
 
 Use exatamente o valor de `ASAAS_WEBHOOK_TOKEN` como token de autenticação do
 webhook. O Asaas o envia no cabeçalho `asaas-access-token`, que o Worker valida.
-Configure somente os eventos de checkout/pagamento necessários (ao menos os
-de pagamento confirmado, cancelamento e expiração). O Worker grava o ID de cada
-evento para que reentregas não atualizem o pedido duas vezes.
+Configure `sendType` como `SEQUENTIALLY` e habilite somente estes eventos de
+Checkout:
+
+```text
+CHECKOUT_PAID
+CHECKOUT_CANCELED
+CHECKOUT_EXPIRED
+```
+
+O Worker grava o ID de cada evento e seu estado de processamento. Uma
+reentrega já concluída é ignorada; uma reentrega de evento que falhou no meio
+do processamento retoma a atualização do pedido.
+
+O redirecionamento de retorno melhora a experiência do comprador, mas não
+confirma o pagamento. Somente `CHECKOUT_PAID`, recebido no webhook, altera o
+pedido para pago.
+
+## Validação local
+
+Na raiz do projeto:
+
+```bash
+npm run test:payments
+npm run build
+```
+
+Dentro desta pasta, valide o pacote do Worker sem publicar:
+
+```bash
+npx wrangler deploy --dry-run
+```
 
 ## Ordem recomendada
 

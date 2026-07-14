@@ -1,14 +1,22 @@
+import { useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle, XCircle, Clock3 } from 'lucide-react'
+import { useCart } from '../../context/CartContext'
 
 export default function PaymentReturnPage() {
   const [params] = useSearchParams()
   const result = params.get('result')
+  const { clear } = useCart()
+  const orderId = sessionStorage.getItem('alvorecer:last-order-id')
+
+  useEffect(() => {
+    if (result === 'success') clear()
+  }, [clear, result])
 
   const content = result === 'success'
     ? {
         icon: <CheckCircle className="h-12 w-12 text-green-600" />,
-        title: 'Pagamento recebido',
+        title: 'Pagamento enviado',
         description: 'Estamos confirmando sua compra. O status final será atualizado automaticamente em Meus Pedidos.',
       }
     : result === 'expired'
@@ -29,6 +37,7 @@ export default function PaymentReturnPage() {
         <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-full bg-slate-50">{content.icon}</div>
         <h1 className="text-2xl font-bold text-slate-900">{content.title}</h1>
         <p className="mt-3 text-slate-600">{content.description}</p>
+        {orderId && <p className="mt-3 text-xs text-slate-400">Pedido {orderId.slice(-8).toUpperCase()}</p>}
         <div className="mt-7 flex justify-center gap-3">
           <Link to="/orders" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Meus pedidos</Link>
           <Link to="/checkout" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Voltar ao carrinho</Link>

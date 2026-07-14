@@ -17,13 +17,14 @@ export default defineConfig({
     target: 'es2020',
     sourcemap: false,
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          lucide: ['lucide-react'],
+        manualChunks(id) {
+          if (id.includes('/node_modules/react-router')) return 'router'
+          if (id.includes('/node_modules/firebase/') || id.includes('/node_modules/@firebase/')) return 'firebase'
+          if (id.includes('/node_modules/lucide-react/')) return 'lucide'
+          if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/')) return 'react'
+          return undefined
         },
       },
     },

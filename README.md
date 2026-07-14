@@ -13,7 +13,7 @@ produtos da linha Kids.
 
 ## Requisitos
 
-- Node.js 20 ou superior;
+- Node.js 22.12 ou superior;
 - Java 21 ou superior para o Firestore Emulator;
 - npm;
 - acesso ao projeto Firebase correto;

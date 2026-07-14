@@ -1,7 +1,7 @@
 // =============================
 // src/context/CartContext.tsx
 // =============================
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { Product } from '../types'
 
 export type CartItem = { product: Product; qty: number }
@@ -46,10 +46,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const i = prev.findIndex((it) => it.product.id === product.id)
       if (i >= 0) {
         const copy = [...prev]
-        copy[i] = { ...copy[i], qty: copy[i].qty + qty }
+        copy[i] = { ...copy[i], qty: Math.min(20, copy[i].qty + qty) }
         return copy
       }
-      return [...prev, { product, qty }]
+      return [...prev, { product, qty: Math.min(20, Math.max(1, qty)) }]
     })
   }
 
@@ -60,13 +60,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQuantity = (productId: Product['id'], qty: number) => {
     setItems((prev) => prev.map((item) => {
       if (item.product.id === productId) {
-        return { ...item, qty: Math.max(1, qty) }
+        return { ...item, qty: Math.min(20, Math.max(1, qty)) }
       }
       return item
     }))
   }
 
-  const clear = () => setItems([])
+  const clear = useCallback(() => setItems([]), [])
 
   const { totalItems, totalPrice } = useMemo(() => {
     const totalItems = items.reduce((acc, it) => acc + it.qty, 0)
