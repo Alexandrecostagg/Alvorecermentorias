@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MapPin, Plus, Check, Home } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { CepLookupError, formatCep, lookupCep, sanitizeCep } from '../../lib/cep'
 import type { Address } from '../../types'
 
 type Props = {
@@ -12,6 +13,11 @@ export default function AddressSelector({ selectedAddressId, onSelect }: Props) 
     const { userProfile, saveUserProfile, user } = useAuth()
     const [isAdding, setIsAdding] = useState(false)
     const [isLoadingCep, setIsLoadingCep] = useState(false)
+    const [cepError, setCepError] = useState('')
+    const [cepMessage, setCepMessage] = useState('')
+    const cepRequestRef = useRef<AbortController | null>(null)
+    const streetInputRef = useRef<HTMLInputElement | null>(null)
+    const numberInputRef = useRef<HTMLInputElement | null>(null)
 
     // Form State
     const [street, setStreet] = useState('')
@@ -22,38 +28,67 @@ export default function AddressSelector({ selectedAddressId, onSelect }: Props) 
     const [state, setState] = useState('')
     const [zipCode, setZipCode] = useState('')
 
+    useEffect(() => () => cepRequestRef.current?.abort(), [])
+
     // Auto-select first address if none selected
     if (!selectedAddressId && userProfile?.addresses && userProfile.addresses.length > 0) {
         onSelect(userProfile.addresses[0].id)
     }
 
     const checkCEP = async (cep: string) => {
-        const cleanCep = cep.replace(/\D/g, '')
+        const cleanCep = sanitizeCep(cep)
         if (cleanCep.length !== 8) return
 
-        setIsLoadingCep(true)
-        try {
-            const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
-            const data = await response.json()
+        cepRequestRef.current?.abort()
+        const controller = new AbortController()
+        cepRequestRef.current = controller
 
-            if (!data.erro) {
-                setStreet(data.logradouro)
-                setNeighborhood(data.bairro)
-                setCity(data.localidade)
-                setState(data.uf)
-            }
+        setIsLoadingCep(true)
+        setCepError('')
+        setCepMessage('')
+        try {
+            const address = await lookupCep(cleanCep, controller.signal)
+            if (controller.signal.aborted) return
+
+            setZipCode(address.zipCode)
+            setStreet(address.street)
+            setNeighborhood(address.neighborhood)
+            setCity(address.city)
+            setState(address.state)
+            setCepMessage('Endereço encontrado. Confira os dados e informe o número.')
+
+            requestAnimationFrame(() => {
+                const nextInput = address.street ? numberInputRef.current : streetInputRef.current
+                nextInput?.focus()
+            })
         } catch (error) {
-            console.error("Erro ao buscar CEP", error)
+            if (controller.signal.aborted) return
+
+            if (error instanceof CepLookupError && error.code === 'not-found') {
+                setCepError('CEP não encontrado. Confira os números ou preencha o endereço manualmente.')
+            } else {
+                setCepError('Não foi possível consultar o CEP agora. Preencha o endereço manualmente.')
+            }
         } finally {
-            setIsLoadingCep(false)
+            if (cepRequestRef.current === controller) {
+                setIsLoadingCep(false)
+                cepRequestRef.current = null
+            }
         }
     }
 
     const handleZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value
+        const val = formatCep(e.target.value)
         setZipCode(val)
-        if (val.replace(/\D/g, '').length === 8) {
-            checkCEP(val)
+        setCepError('')
+        setCepMessage('')
+
+        if (sanitizeCep(val).length === 8) {
+            void checkCEP(val)
+        } else {
+            cepRequestRef.current?.abort()
+            cepRequestRef.current = null
+            setIsLoadingCep(false)
         }
     }
 
@@ -91,6 +126,8 @@ export default function AddressSelector({ selectedAddressId, onSelect }: Props) 
         setCity('')
         setState('')
         setZipCode('')
+        setCepError('')
+        setCepMessage('')
     }
 
     return (
@@ -143,15 +180,24 @@ export default function AddressSelector({ selectedAddressId, onSelect }: Props) 
                         <div className="col-span-2">
                             <input
                                 required
-                                placeholder="CEP (somente números)"
+                                inputMode="numeric"
+                                autoComplete="postal-code"
+                                aria-describedby="cep-feedback"
+                                aria-invalid={Boolean(cepError)}
+                                placeholder="CEP"
                                 value={zipCode}
                                 onChange={handleZipChange}
                                 maxLength={9}
                                 className="w-full p-2 rounded border border-slate-300 text-sm focus:border-slate-900 focus:outline-none"
                             />
+                            <div id="cep-feedback" className="mt-1 min-h-5 text-xs">
+                                {cepError && <p role="alert" className="text-red-600">{cepError}</p>}
+                                {cepMessage && <p role="status" className="text-emerald-700">{cepMessage}</p>}
+                            </div>
                         </div>
                         <div className="col-span-1">
                             <input
+                                ref={streetInputRef}
                                 required
                                 placeholder="Rua / Av."
                                 value={street}
@@ -161,7 +207,7 @@ export default function AddressSelector({ selectedAddressId, onSelect }: Props) 
                             />
                         </div>
                         <div className="col-span-1">
-                            <input required placeholder="Número" value={number} onChange={e => setNumber(e.target.value)} className="w-full p-2 rounded border border-slate-300 text-sm" />
+                            <input ref={numberInputRef} required placeholder="Número" value={number} onChange={e => setNumber(e.target.value)} className="w-full p-2 rounded border border-slate-300 text-sm" />
                         </div>
                         <div className="col-span-2">
                             <input placeholder="Complemento / Ponto de Referência" value={complement} onChange={e => setComplement(e.target.value)} className="w-full p-2 rounded border border-slate-300 text-sm" />

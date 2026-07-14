@@ -57,6 +57,7 @@ Status: **em andamento**
 - [x] Transformar filtros móveis em painel recolhível.
 - [x] Corrigir ou remover ordenação e favoritos sem função.
 - [x] Revisar modal e detalhes de produto.
+- [x] Preencher o endereço automaticamente a partir de um CEP válido.
 - [ ] Preencher contato, endereço e redes oficiais.
 - [ ] Publicar Política de Privacidade e Termos de Uso.
 - [ ] Otimizar imagens grandes e retirar duplicação desnecessária no Pages.
@@ -162,6 +163,7 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Firebase Auth | Provedor Google confirmado como ativo e `alvorecermentorias-web.pages.dev` adicionado aos domínios autorizados sem remover os domínios existentes. | Concluído |
 | 14/07/2026 | Recuperação de senha | Fluxo por e-mail implementado em português, com resposta que não revela se a conta existe e tratamento amigável de erros. | Concluído |
 | 14/07/2026 | Testes de autenticação | Testes unitários adicionados para login Google, credenciais e recuperação de senha. | Concluído |
+| 14/07/2026 | UX do checkout | Consulta de CEP com preenchimento automático, fallback entre dois serviços gratuitos e orientação para CEP inexistente. | Concluído |
 
 ## Regras de trabalho
 
