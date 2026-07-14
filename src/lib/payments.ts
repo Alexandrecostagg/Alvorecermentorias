@@ -5,15 +5,18 @@ type AuthenticatedUser = {
   getIdToken: () => Promise<string>
 }
 
+export type AsaasBillingType = 'PIX' | 'CREDIT_CARD'
+
 type StartCheckoutParams = {
   user: AuthenticatedUser
   items: CartItem[]
   address: Address
+  paymentMethod: AsaasBillingType
 }
 
 const paymentApiBaseUrl = import.meta.env.VITE_PAYMENT_API_BASE_URL?.replace(/\/$/, '')
 
-export async function startAsaasCheckout({ user, items, address }: StartCheckoutParams) {
+export async function startAsaasCheckout({ user, items, address, paymentMethod }: StartCheckoutParams) {
   if (!paymentApiBaseUrl) {
     throw new Error('O pagamento ainda não foi configurado neste ambiente.')
   }
@@ -30,6 +33,7 @@ export async function startAsaasCheckout({ user, items, address }: StartCheckout
         quantity: qty,
       })),
       address,
+      billingType: paymentMethod,
     }),
   })
 

@@ -47,6 +47,13 @@ describe('Asaas Worker', () => {
     })).toThrow('endereço de entrega completo')
   })
 
+  it('aceita somente PIX ou cartão como forma de pagamento', () => {
+    expect(testables.normalizeBillingType('PIX')).toBe('PIX')
+    expect(testables.normalizeBillingType('CREDIT_CARD')).toBe('CREDIT_CARD')
+    expect(() => testables.normalizeBillingType('BOLETO')).toThrow('Escolha PIX ou cartão')
+    expect(() => testables.normalizeBillingType(undefined)).toThrow('Escolha PIX ou cartão')
+  })
+
   it('mapeia apenas eventos financeiros conhecidos', () => {
     expect(testables.paymentTransitionFromAsaasEvent('CHECKOUT_PAID')).toEqual({
       orderStatus: 'paid',
@@ -89,6 +96,7 @@ describe('Asaas Worker', () => {
         product: { id: 'produto-1', title: 'Livro', price: 49.9 },
       }],
       user: { email: 'cliente@example.com', name: 'Cliente' },
+      billingType: 'PIX',
     }, {
       APP_ORIGIN: 'https://example.com',
       FIREBASE_PROJECT_ID: 'project',
@@ -105,6 +113,7 @@ describe('Asaas Worker', () => {
 
     expect(headers['User-Agent']).toContain('AlvorecerMentorias')
     expect(body.externalReference).toBe('order_123')
+    expect(body.billingTypes).toEqual(['PIX'])
     expect(body.customerData).toEqual({ name: 'Cliente', email: 'cliente@example.com' })
     expect(body).not.toHaveProperty('customerData.address')
   })

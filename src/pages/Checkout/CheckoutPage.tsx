@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import AddressSelector from '../../components/checkout/AddressSelector'
 import PaymentSelector from '../../components/checkout/PaymentSelector'
 import { startAsaasCheckout } from '../../lib/payments'
+import type { AsaasBillingType } from '../../lib/payments'
 import ProductImage from '../../components/ui/ProductImage'
 
 export default function CheckoutPage() {
@@ -13,11 +14,12 @@ export default function CheckoutPage() {
     const { user, userProfile } = useAuth()
 
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<AsaasBillingType | null>(null)
     const [isProcessing, setIsProcessing] = useState(false)
     const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
     const handleCheckout = async () => {
-        if (!user || !selectedAddressId) return
+        if (!user || !selectedAddressId || !selectedPaymentMethod) return
 
         setIsProcessing(true)
         setCheckoutError(null)
@@ -32,6 +34,7 @@ export default function CheckoutPage() {
                 user,
                 items,
                 address: deliveryAddress,
+                paymentMethod: selectedPaymentMethod,
             })
 
             sessionStorage.setItem('alvorecer:last-order-id', orderId)
@@ -83,7 +86,11 @@ export default function CheckoutPage() {
                         />
 
                         {/* Payment Selector */}
-                        <PaymentSelector />
+                        <PaymentSelector
+                            selectedMethod={selectedPaymentMethod}
+                            onSelect={setSelectedPaymentMethod}
+                            disabled={isProcessing}
+                        />
 
                         {/* Cart Items List */}
                         {items.map((item) => (
@@ -173,6 +180,12 @@ export default function CheckoutPage() {
                                 </div>
                             )}
 
+                            {selectedAddressId && !selectedPaymentMethod && (
+                                <div className="mb-4 text-xs text-center text-red-500 font-medium">
+                                    Escolha PIX ou cartão para continuar.
+                                </div>
+                            )}
+
                             {checkoutError && (
                                 <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                                     {checkoutError}
@@ -182,7 +195,7 @@ export default function CheckoutPage() {
                             <button
                                 type="button"
                                 onClick={handleCheckout}
-                                disabled={!selectedAddressId || isProcessing}
+                                disabled={!selectedAddressId || !selectedPaymentMethod || isProcessing}
                                 className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isProcessing ? (
@@ -191,7 +204,12 @@ export default function CheckoutPage() {
                                     </>
                                 ) : (
                                     <>
-                                        Ir para o pagamento seguro <ArrowRight className="h-5 w-5" />
+                                        {selectedPaymentMethod === 'PIX'
+                                            ? 'Pagar com PIX'
+                                            : selectedPaymentMethod === 'CREDIT_CARD'
+                                                ? 'Pagar com cartão'
+                                                : 'Escolha a forma de pagamento'}
+                                        <ArrowRight className="h-5 w-5" />
                                     </>
                                 )}
                             </button>

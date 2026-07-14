@@ -76,7 +76,8 @@ Status: **em andamento**
 - [x] Configurar secrets do Worker sem gravá-los no Git.
 - [x] Publicar `alvorecermentorias-payments`.
 - [x] Configurar o webhook no Asaas Sandbox.
-- [ ] Configurar `VITE_PAYMENT_API_BASE_URL` e republicar o frontend.
+- [x] Configurar `VITE_PAYMENT_API_BASE_URL` e republicar o frontend.
+- [x] Permitir que o cliente escolha PIX ou cartão antes de abrir a Asaas.
 - [ ] Confirmar o pagamento pelo webhook, não apenas pela URL de retorno.
 
 Critério de conclusão: uma compra Sandbox cria checkout, recebe webhook,
@@ -164,6 +165,8 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Recuperação de senha | Fluxo por e-mail implementado em português, com resposta que não revela se a conta existe e tratamento amigável de erros. | Concluído |
 | 14/07/2026 | Testes de autenticação | Testes unitários adicionados para login Google, credenciais e recuperação de senha. | Concluído |
 | 14/07/2026 | UX do checkout | Consulta de CEP com preenchimento automático, fallback entre dois serviços gratuitos e orientação para CEP inexistente. | Concluído |
+| 14/07/2026 | Forma de pagamento | PIX e cartão transformados em seletores; o método escolhido limita as opções do checkout hospedado pela Asaas. | Concluído |
+| 14/07/2026 | Integração do frontend | URL pública do Worker configurada no build do Pages para iniciar o checkout Sandbox. | Concluído |
 
 ## Regras de trabalho
 

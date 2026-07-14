@@ -9,6 +9,7 @@ interface Env {
 }
 
 type CheckoutItemRequest = { productId: string; quantity: number }
+type AsaasBillingType = 'PIX' | 'CREDIT_CARD'
 type AddressInput = {
   street?: string
   number?: string
@@ -70,9 +71,10 @@ async function createCheckout(request: Request, env: Env) {
 
   const payload = await request.json().catch(() => {
     throw new HttpError(400, 'Corpo da requisição inválido.')
-  }) as { items?: CheckoutItemRequest[]; address?: AddressInput }
+  }) as { items?: CheckoutItemRequest[]; address?: AddressInput; billingType?: unknown }
   const items = normalizeItems(payload.items)
   const address = normalizeAddress(payload.address)
+  const billingType = normalizeBillingType(payload.billingType)
   const user = await verifyFirebaseUser(request, env)
   const accessToken = await getGoogleAccessToken(env)
   const products = await loadProducts(items, env, accessToken)
@@ -85,7 +87,8 @@ async function createCheckout(request: Request, env: Env) {
     items: products.map(({ product, quantity }) => ({ product, qty: quantity })),
     total: roundMoney(total),
     status: 'pending',
-    paymentMethod: 'asaas',
+    paymentMethod: billingType === 'PIX' ? 'pix' : 'credit_card',
+    asaasBillingType: billingType,
     paymentStatus: 'creating_checkout',
     address,
     createdAt: now,
@@ -94,7 +97,7 @@ async function createCheckout(request: Request, env: Env) {
 
   let asaasCheckout: { id: string; link: string; status: string }
   try {
-    asaasCheckout = await requestAsaasCheckout({ orderId, products, user }, env)
+    asaasCheckout = await requestAsaasCheckout({ orderId, products, user, billingType }, env)
   } catch (error) {
     await markCheckoutFailure(orderId, env, accessToken)
     throw error
@@ -197,6 +200,11 @@ function normalizeItems(value: unknown): CheckoutItemRequest[] {
   return [...grouped.entries()].map(([productId, quantity]) => ({ productId, quantity }))
 }
 
+function normalizeBillingType(value: unknown): AsaasBillingType {
+  if (value === 'PIX' || value === 'CREDIT_CARD') return value
+  throw new HttpError(400, 'Escolha PIX ou cartão para continuar.')
+}
+
 function normalizeAddress(value: unknown): AddressInput {
   if (!value || typeof value !== 'object') throw new HttpError(400, 'Endereço de entrega inválido.')
   const address = value as AddressInput
@@ -279,6 +287,7 @@ async function requestAsaasCheckout(
     orderId: string
     products: Array<{ quantity: number; product: { id: string; title: string; price: number; description?: string } }>
     user: { email: string; name: string }
+    billingType: AsaasBillingType
   },
   env: Env,
 ) {
@@ -292,7 +301,7 @@ async function requestAsaasCheckout(
       access_token: env.ASAAS_ACCESS_TOKEN,
     },
     body: JSON.stringify({
-      billingTypes: ['PIX', 'CREDIT_CARD'],
+      billingTypes: [data.billingType],
       chargeTypes: ['DETACHED'],
       minutesToExpire: 60,
       externalReference: data.orderId,
@@ -570,6 +579,7 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 export const testables = {
   extractOrderId,
   normalizeAddress,
+  normalizeBillingType,
   normalizeItems,
   paymentTransitionFromAsaasEvent,
   requestAsaasCheckout,
