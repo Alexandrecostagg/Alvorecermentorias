@@ -7,8 +7,9 @@ e o checkout.
 
 ## Antes de publicar
 
-1. No arquivo `wrangler.toml`, substitua `APP_ORIGIN` pelo domínio final do
-   site (sem barra no final). Para testes locais, use `http://127.0.0.1:5173`.
+1. O `APP_ORIGIN` já está apontando para o Pages público. Se você conectar um
+   domínio próprio depois, atualize-o para esse domínio (sem barra no final).
+   Para testes locais temporários, use `http://127.0.0.1:5173`.
 2. No Asaas, comece pelo ambiente Sandbox e crie uma chave de API.
 3. No Firebase Console, gere uma chave de conta de serviço em **Configurações
    do projeto > Contas de serviço**. Não envie esse JSON por chat nem o
