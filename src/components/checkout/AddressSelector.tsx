@@ -55,7 +55,11 @@ export default function AddressSelector({ selectedAddressId, onSelect }: Props) 
             setNeighborhood(address.neighborhood)
             setCity(address.city)
             setState(address.state)
-            setCepMessage('Endereço encontrado. Confira os dados e informe o número.')
+            setCepMessage(
+                address.street && address.neighborhood
+                    ? 'Endereço encontrado. Confira os dados e informe o número.'
+                    : 'CEP localizado. Complete rua, bairro e número.'
+            )
 
             requestAnimationFrame(() => {
                 const nextInput = address.street ? numberInputRef.current : streetInputRef.current
