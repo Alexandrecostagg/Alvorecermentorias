@@ -72,7 +72,7 @@ Status: **em andamento**
 - [x] Modelar checkout pago, cancelado e expirado.
 - [ ] Modelar estorno após a validação do fluxo básico.
 - [ ] Configurar secrets do Worker sem gravá-los no Git.
-- [ ] Publicar `alvorecermentorias-payments`.
+- [x] Publicar `alvorecermentorias-payments`.
 - [ ] Configurar o webhook no Asaas Sandbox.
 - [ ] Configurar `VITE_PAYMENT_API_BASE_URL` e republicar o frontend.
 - [ ] Confirmar o pagamento pelo webhook, não apenas pela URL de retorno.
@@ -152,6 +152,8 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Testes Asaas | Sete testes unitários adicionados para carrinho, endereço, payload, token e transições financeiras. | Concluído |
 | 14/07/2026 | Ferramentas | Projeto migrado para Node 22, Vite 8 e Wrangler 4.110; auditoria npm com zero vulnerabilidades. | Concluído |
 | 14/07/2026 | Cloudflare | Conta confirmada; Worker ainda não existe e os secrets de Sandbox ainda não foram cadastrados. | Em andamento |
+| 14/07/2026 | Deploy Worker | `alvorecermentorias-payments` publicado em `workers.dev`; rota pública verificada. | Concluído |
+| 14/07/2026 | Secrets Worker | `FIREBASE_WEB_API_KEY` configurado sem exposição; faltam conta de serviço Firebase e tokens Asaas. | Em andamento |
 
 ## Regras de trabalho
 
