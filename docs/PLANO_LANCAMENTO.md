@@ -48,7 +48,7 @@ publicadas e nenhuma funcionalidade inexistente apresentada como disponível.
 
 ## Etapa 2 — Catálogo, conteúdo e UX essencial
 
-Status: **não iniciada**
+Status: **em andamento**
 
 - [ ] Remover produtos duplicados no Firestore.
 - [ ] Substituir imagens quebradas por arquivos do R2.
@@ -136,6 +136,7 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Escopo MVP | Cursos, mentorias, doação e links fictícios retirados da navegação pública; home focada em Loja e Kids. | Concluído |
 | 14/07/2026 | UX móvel | Menu responsivo implementado com rotas públicas e opções autenticadas. | Concluído |
 | 14/07/2026 | Documentação | README refeito com arquitetura, ambiente, comandos e política de secrets. | Concluído |
+| 14/07/2026 | Git | Primeiro lote do plano salvo no commit `fd59ea1` e enviado para `origin/main`. | Concluído |
 
 ## Regras de trabalho
 
