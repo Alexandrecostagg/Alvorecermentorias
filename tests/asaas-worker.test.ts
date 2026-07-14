@@ -54,6 +54,45 @@ describe('Asaas Worker', () => {
     expect(() => testables.normalizeBillingType(undefined)).toThrow('Escolha PIX ou cartão')
   })
 
+  it('migra o ID numérico de um carrinho antigo para o documento atual', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{
+        document: {
+          name: 'projects/project/databases/(default)/documents/products/produto-atual',
+          fields: {
+            id: { integerValue: '1' },
+            title: { stringValue: 'Bíblia Alvorecer Kids' },
+            price: { doubleValue: 89.9 },
+            section: { stringValue: 'kids' },
+          },
+        },
+      }]), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+
+    const products = await testables.loadProducts(
+      [{ productId: '1', quantity: 1 }],
+      {
+        APP_ORIGIN: 'https://example.com',
+        FIREBASE_PROJECT_ID: 'project',
+        FIREBASE_WEB_API_KEY: 'firebase-key',
+        FIREBASE_SERVICE_ACCOUNT_JSON: '{}',
+        ASAAS_API_BASE_URL: 'https://api-sandbox.asaas.com/v3',
+        ASAAS_ACCESS_TOKEN: 'asaas-key',
+        ASAAS_WEBHOOK_TOKEN: 'webhook-key',
+      },
+      'google-token',
+    )
+
+    expect(products[0].product).toMatchObject({
+      id: 'produto-atual',
+      title: 'Bíblia Alvorecer Kids',
+      price: 89.9,
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const query = JSON.parse(String(fetchMock.mock.calls[1][1]?.body))
+    expect(query.structuredQuery.where.fieldFilter.value).toEqual({ integerValue: '1' })
+  })
+
   it('mapeia apenas eventos financeiros conhecidos', () => {
     expect(testables.paymentTransitionFromAsaasEvent('CHECKOUT_PAID')).toEqual({
       orderStatus: 'paid',

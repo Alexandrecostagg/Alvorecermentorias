@@ -252,7 +252,8 @@ async function verifyFirebaseUser(request: Request, env: Env) {
 
 async function loadProducts(items: CheckoutItemRequest[], env: Env, accessToken: string) {
   return Promise.all(items.map(async ({ productId, quantity }) => {
-    const document = await readFirestoreDocument('products', productId, env, accessToken)
+    const resolvedProduct = await resolveCatalogProduct(productId, env, accessToken)
+    const document = resolvedProduct.document
     const data = fromFirestoreFields(document.fields as Record<string, unknown>) as Record<string, unknown>
     const price = Number(data.price)
     const stock = data.stock === undefined ? undefined : Number(data.stock)
@@ -271,7 +272,7 @@ async function loadProducts(items: CheckoutItemRequest[], env: Env, accessToken:
     return {
       quantity,
       product: {
-        id: productId,
+        id: resolvedProduct.id,
         title,
         price: roundMoney(price),
         image: typeof data.image === 'string' ? data.image : '',
@@ -280,6 +281,50 @@ async function loadProducts(items: CheckoutItemRequest[], env: Env, accessToken:
       },
     }
   }))
+}
+
+async function resolveCatalogProduct(productId: string, env: Env, accessToken: string) {
+  const currentDocument = await tryReadFirestoreDocument('products', productId, env, accessToken)
+  if (currentDocument) return { id: productId, document: currentDocument }
+
+  const legacyDocument = await findProductByLegacyId(productId, env, accessToken)
+  if (legacyDocument) return legacyDocument
+
+  throw new HttpError(400, 'Um produto do carrinho não está mais disponível. Remova-o e adicione novamente.')
+}
+
+async function findProductByLegacyId(productId: string, env: Env, accessToken: string) {
+  if (!/^\d{1,12}$/.test(productId)) return undefined
+
+  const response = await fetch(`${firestoreDatabaseUrl(env)}/documents:runQuery`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: 'products' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'id' },
+            op: 'EQUAL',
+            value: { integerValue: productId },
+          },
+        },
+        limit: 2,
+      },
+    }),
+  })
+  if (!response.ok) throw new Error('Não foi possível consultar o catálogo legado.')
+
+  const results = await response.json() as Array<{
+    document?: { name?: string; fields?: Record<string, unknown> }
+  }>
+  const documents = results.flatMap((result) => result.document ? [result.document] : [])
+  if (documents.length !== 1) return undefined
+
+  const document = documents[0]
+  const canonicalId = document.name?.split('/').pop()
+  if (!canonicalId || !document.fields) return undefined
+  return { id: canonicalId, document }
 }
 
 async function requestAsaasCheckout(
@@ -441,7 +486,11 @@ async function updateFirestoreDocument(collection: string, documentId: string, d
 }
 
 function firestoreCollectionUrl(collection: string, env: Env) {
-  return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(env.FIREBASE_PROJECT_ID)}/databases/(default)/documents/${collection}`
+  return `${firestoreDatabaseUrl(env)}/documents/${collection}`
+}
+
+function firestoreDatabaseUrl(env: Env) {
+  return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(env.FIREBASE_PROJECT_ID)}/databases/(default)`
 }
 
 function firestoreDocumentUrl(collection: string, documentId: string, env: Env) {
@@ -578,6 +627,7 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 
 export const testables = {
   extractOrderId,
+  loadProducts,
   normalizeAddress,
   normalizeBillingType,
   normalizeItems,

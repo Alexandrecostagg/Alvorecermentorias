@@ -167,6 +167,7 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | UX do checkout | Consulta de CEP com preenchimento automático, fallback entre dois serviços gratuitos e orientação para CEP inexistente. | Concluído |
 | 14/07/2026 | Forma de pagamento | PIX e cartão transformados em seletores; o método escolhido limita as opções do checkout hospedado pela Asaas. | Concluído |
 | 14/07/2026 | Integração do frontend | URL pública do Worker configurada no build do Pages para iniciar o checkout Sandbox. | Concluído |
+| 14/07/2026 | Compatibilidade do carrinho | Worker preparado para migrar IDs numéricos legados para os documentos atuais do catálogo antes de criar o pedido. | Concluído |
 
 ## Regras de trabalho
 
