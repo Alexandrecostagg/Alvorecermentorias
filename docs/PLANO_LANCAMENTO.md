@@ -206,6 +206,8 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 15/07/2026 | Nova home | Hero editorial com fotografia própria, proposta de valor, caminhos, benefícios, produtos reais e seção institucional implementados. | Concluído |
 | 15/07/2026 | Nova loja | Abertura comercial, sinais de confiança e diferenciação de produtos físicos e digitais adicionados; avaliações fictícias removidas da interface. | Concluído |
 | 15/07/2026 | Validação UX | Home e loja verificadas em desktop e celular, sem estouro horizontal; imagens, filtros, produtos e chamadas carregando corretamente. | Concluído |
+| 15/07/2026 | Git UX | Redesign salvo no commit `8e1c76e` e enviado para `origin/main`. | Concluído |
+| 15/07/2026 | Deploy UX | Nova home e loja publicadas no deployment `7f565922` e verificadas no domínio principal. | Concluído |
 
 ## Regras de trabalho
 
