@@ -54,6 +54,16 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Chaves dos arquivos e permissões de download são acessadas somente
+    // pelo Worker com credenciais de serviço. Nunca são expostas ao navegador.
+    match /digitalAssets/{assetId} {
+      allow read, write: if false;
+    }
+
+    match /digitalEntitlements/{entitlementId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

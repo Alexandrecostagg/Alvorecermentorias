@@ -40,6 +40,7 @@ export default function PaymentReturnPage() {
         {orderId && <p className="mt-3 text-xs text-slate-400">Pedido {orderId.slice(-8).toUpperCase()}</p>}
         <div className="mt-7 flex justify-center gap-3">
           <Link to="/orders" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Meus pedidos</Link>
+          {result === 'success' && <Link to="/library" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Minha biblioteca</Link>}
           <Link to="/checkout" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Voltar ao carrinho</Link>
         </div>
       </div>

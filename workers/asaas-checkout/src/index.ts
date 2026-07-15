@@ -7,6 +7,21 @@ interface Env {
   ASAAS_ACCESS_TOKEN: string
   ASAAS_WEBHOOK_TOKEN: string
   SHIPPING_ORIGIN_POSTAL_CODE: string
+  DOWNLOAD_TOKEN_SECRET: string
+  DIGITAL_ASSETS: R2BucketBinding
+}
+
+type R2BucketBinding = {
+  put: (key: string, value: ReadableStream | ArrayBuffer | Blob, options?: {
+    httpMetadata?: { contentType?: string }
+    customMetadata?: Record<string, string>
+  }) => Promise<unknown>
+  get: (key: string) => Promise<{
+    body: ReadableStream
+    size: number
+    httpMetadata?: { contentType?: string }
+  } | null>
+  delete: (key: string) => Promise<void>
 }
 
 type CheckoutItemRequest = { productId: string; quantity: number }
@@ -52,6 +67,25 @@ export default {
         return json(await createCheckout(request, env), 201, corsHeaders(request, env))
       }
 
+      if (request.method === 'POST' && url.pathname === '/admin/digital-assets') {
+        assertAllowedOrigin(request, env)
+        return json(await uploadDigitalAsset(request, env), 201, corsHeaders(request, env))
+      }
+
+      if (request.method === 'GET' && url.pathname === '/library') {
+        assertAllowedOrigin(request, env)
+        return json(await listDigitalLibrary(request, env), 200, corsHeaders(request, env))
+      }
+
+      if (request.method === 'POST' && url.pathname === '/digital/download-link') {
+        assertAllowedOrigin(request, env)
+        return json(await createDigitalDownloadLink(request, env), 200, corsHeaders(request, env))
+      }
+
+      if (request.method === 'GET' && url.pathname === '/digital/download') {
+        return downloadDigitalAsset(request, env)
+      }
+
       if (request.method === 'POST' && url.pathname === '/webhooks/asaas') {
         return json(await receiveAsaasWebhook(request, env))
       }
@@ -85,6 +119,7 @@ async function createCheckout(request: Request, env: Env) {
   const user = await verifyFirebaseUser(request, env)
   const accessToken = await getGoogleAccessToken(env)
   const products = await loadProducts(items, env, accessToken)
+  assertDigitalProductsReady(products)
   assertPhysicalShippingIsQuoted(products)
   const profile = await loadUserProfile(user.uid, env, accessToken)
   const customerData = buildAsaasCustomerData(user, profile)
@@ -137,6 +172,169 @@ async function createCheckout(request: Request, env: Env) {
   return { orderId, checkoutUrl: asaasCheckout.link }
 }
 
+async function uploadDigitalAsset(request: Request, env: Env) {
+  ensureConfigured(env, ['FIREBASE_WEB_API_KEY', 'FIREBASE_SERVICE_ACCOUNT_JSON'])
+  if (!env.DIGITAL_ASSETS) throw new HttpError(500, 'O armazenamento digital ainda não foi configurado.')
+
+  const user = await verifyFirebaseUser(request, env)
+  const accessToken = await getGoogleAccessToken(env)
+  const profile = await loadUserProfile(user.uid, env, accessToken)
+  if (profile?.role !== 'admin') throw new HttpError(403, 'Apenas administradores podem enviar arquivos digitais.')
+
+  const form = await request.formData().catch(() => {
+    throw new HttpError(400, 'Envio de arquivo inválido.')
+  })
+  const productId = cleanText(form.get('productId'))
+  const file = form.get('file')
+  if (!productId || !(file instanceof File)) throw new HttpError(400, 'Informe o produto e o arquivo digital.')
+  if (file.size <= 0 || file.size > 50 * 1024 * 1024) throw new HttpError(400, 'O arquivo deve ter no máximo 50 MB.')
+
+  const fileName = sanitizeDigitalFileName(file.name)
+  const contentType = normalizeDigitalContentType(fileName, file.type)
+  const resolvedProduct = await resolveCatalogProduct(productId, env, accessToken)
+  const product = fromFirestoreFields(resolvedProduct.document.fields || {}) as Record<string, unknown>
+  if (product.shippingRequired !== false) throw new HttpError(400, 'Marque o produto como digital e salve antes de enviar o arquivo.')
+
+  const previousAssetDocument = await tryReadFirestoreDocument('digitalAssets', resolvedProduct.id, env, accessToken)
+  const previousAsset = previousAssetDocument?.fields
+    ? fromFirestoreFields(previousAssetDocument.fields) as Record<string, unknown>
+    : undefined
+  const assetKey = `products/${resolvedProduct.id}/${crypto.randomUUID()}-${fileName}`
+  await env.DIGITAL_ASSETS.put(assetKey, file, {
+    httpMetadata: { contentType },
+    customMetadata: { productId: resolvedProduct.id, originalFileName: fileName },
+  })
+
+  try {
+    await setFirestoreDocument('digitalAssets', resolvedProduct.id, {
+      productId: resolvedProduct.id,
+      assetKey,
+      fileName,
+      contentType,
+      size: file.size,
+      updatedAt: new Date().toISOString(),
+      updatedBy: user.uid,
+    }, env, accessToken)
+    await updateFirestoreDocument('products', resolvedProduct.id, {
+      digitalDeliveryReady: true,
+      digitalFileName: fileName,
+      updatedAt: new Date().toISOString(),
+    }, env, accessToken)
+  } catch (error) {
+    await env.DIGITAL_ASSETS.delete(assetKey).catch(() => undefined)
+    throw error
+  }
+
+  const previousKey = typeof previousAsset?.assetKey === 'string' ? previousAsset.assetKey : undefined
+  if (previousKey && previousKey !== assetKey) {
+    await env.DIGITAL_ASSETS.delete(previousKey).catch(() => undefined)
+  }
+
+  return { productId: resolvedProduct.id, fileName, size: file.size }
+}
+
+async function listDigitalLibrary(request: Request, env: Env) {
+  ensureConfigured(env, ['FIREBASE_WEB_API_KEY', 'FIREBASE_SERVICE_ACCOUNT_JSON'])
+  const user = await verifyFirebaseUser(request, env)
+  const accessToken = await getGoogleAccessToken(env)
+  const documents = await queryFirestoreDocuments('digitalEntitlements', 'userId', user.uid, env, accessToken)
+  const items = documents
+    .filter(({ data }) => data.active !== false)
+    .map(({ id, data }) => ({
+      id,
+      orderId: String(data.orderId || ''),
+      productId: String(data.productId || ''),
+      title: String(data.title || 'Material digital'),
+      image: typeof data.image === 'string' ? data.image : undefined,
+      fileName: String(data.fileName || 'material-digital'),
+      grantedAt: String(data.grantedAt || ''),
+    }))
+    .sort((a, b) => b.grantedAt.localeCompare(a.grantedAt))
+  return { items }
+}
+
+async function createDigitalDownloadLink(request: Request, env: Env) {
+  ensureConfigured(env, ['FIREBASE_WEB_API_KEY', 'FIREBASE_SERVICE_ACCOUNT_JSON', 'DOWNLOAD_TOKEN_SECRET'])
+  const user = await verifyFirebaseUser(request, env)
+  const payload = await request.json().catch(() => {
+    throw new HttpError(400, 'Solicitação de download inválida.')
+  }) as { entitlementId?: unknown }
+  const entitlementId = cleanText(payload.entitlementId)
+  if (!entitlementId) throw new HttpError(400, 'Material digital inválido.')
+
+  const accessToken = await getGoogleAccessToken(env)
+  const entitlementDocument = await readFirestoreDocument('digitalEntitlements', entitlementId, env, accessToken)
+  const entitlement = fromFirestoreFields(entitlementDocument.fields || {}) as Record<string, unknown>
+  if (entitlement.userId !== user.uid || entitlement.active === false) throw new HttpError(403, 'Este material não está disponível para sua conta.')
+
+  const token = await signDownloadToken({
+    entitlementId,
+    userId: user.uid,
+    expiresAt: Date.now() + 5 * 60_000,
+  }, env.DOWNLOAD_TOKEN_SECRET)
+  return { url: `${new URL(request.url).origin}/digital/download?token=${encodeURIComponent(token)}`, expiresIn: 300 }
+}
+
+async function downloadDigitalAsset(request: Request, env: Env) {
+  ensureConfigured(env, ['FIREBASE_SERVICE_ACCOUNT_JSON', 'DOWNLOAD_TOKEN_SECRET'])
+  if (!env.DIGITAL_ASSETS) throw new HttpError(500, 'O armazenamento digital ainda não foi configurado.')
+  const token = new URL(request.url).searchParams.get('token')
+  const payload = await verifyDownloadToken(token, env.DOWNLOAD_TOKEN_SECRET)
+
+  const accessToken = await getGoogleAccessToken(env)
+  const entitlementDocument = await readFirestoreDocument('digitalEntitlements', payload.entitlementId, env, accessToken)
+  const entitlement = fromFirestoreFields(entitlementDocument.fields || {}) as Record<string, unknown>
+  if (entitlement.userId !== payload.userId || entitlement.active === false) throw new HttpError(403, 'Este link não está mais disponível.')
+  const assetKey = typeof entitlement.assetKey === 'string' ? entitlement.assetKey : ''
+  if (!assetKey) throw new HttpError(404, 'Arquivo digital não encontrado.')
+
+  const object = await env.DIGITAL_ASSETS.get(assetKey)
+  if (!object) throw new HttpError(404, 'Arquivo digital não encontrado.')
+  const fileName = sanitizeDigitalFileName(String(entitlement.fileName || 'material-digital.pdf'))
+  return new Response(object.body, {
+    headers: {
+      'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+      'Content-Length': String(object.size),
+      'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      'Cache-Control': 'private, no-store, max-age=0',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  })
+}
+
+async function grantDigitalEntitlements(
+  orderId: string,
+  order: Record<string, unknown>,
+  env: Env,
+  accessToken: string,
+) {
+  const userId = typeof order.userId === 'string' ? order.userId : ''
+  const items = Array.isArray(order.items) ? order.items as Array<Record<string, unknown>> : []
+  if (!userId) throw new Error('Pedido sem usuário para liberação digital.')
+
+  for (const item of items) {
+    const product = item.product && typeof item.product === 'object' ? item.product as Record<string, unknown> : {}
+    if (product.shippingRequired !== false) continue
+    const productId = typeof product.id === 'string' ? product.id : String(product.id || '')
+    if (!productId) throw new Error('Produto digital inválido no pedido.')
+    const assetDocument = await readFirestoreDocument('digitalAssets', productId, env, accessToken)
+    const asset = fromFirestoreFields(assetDocument.fields || {}) as Record<string, unknown>
+    if (typeof asset.assetKey !== 'string') throw new Error('Produto digital sem arquivo privado.')
+
+    await createFirestoreDocument('digitalEntitlements', `${orderId}_${productId}`, {
+      userId,
+      orderId,
+      productId,
+      title: typeof product.title === 'string' ? product.title : 'Material digital',
+      image: typeof product.image === 'string' ? product.image : undefined,
+      fileName: typeof asset.fileName === 'string' ? asset.fileName : 'material-digital',
+      assetKey: asset.assetKey,
+      active: true,
+      grantedAt: new Date().toISOString(),
+    }, env, accessToken, true)
+  }
+}
+
 async function receiveAsaasWebhook(request: Request, env: Env) {
   ensureConfigured(env, ['ASAAS_WEBHOOK_TOKEN', 'FIREBASE_SERVICE_ACCOUNT_JSON'])
   if (!safeTokenEquals(request.headers.get('asaas-access-token'), env.ASAAS_WEBHOOK_TOKEN)) {
@@ -178,6 +376,9 @@ async function receiveAsaasWebhook(request: Request, env: Env) {
     asaasEventId: eventId,
     updatedAt: new Date().toISOString(),
   }, env, accessToken)
+  if (transition.orderStatus === 'paid') {
+    await grantDigitalEntitlements(orderId, order, env, accessToken)
+  }
   await updateFirestoreDocument('paymentEvents', eventId, {
     processed: true,
     processedAt: new Date().toISOString(),
@@ -320,13 +521,14 @@ async function loadProducts(items: CheckoutItemRequest[], env: Env, accessToken:
     const price = Number(data.price)
     const stock = data.stock === undefined ? undefined : Number(data.stock)
     const title = typeof data.title === 'string' ? data.title : ''
+    const shippingRequired = data.shippingRequired !== false
     if (
       !title
       || !Number.isFinite(price)
       || price <= 0
       || data.active === false
       || data.ativo === false
-      || (stock !== undefined && (!Number.isFinite(stock) || stock < quantity))
+      || (shippingRequired && stock !== undefined && (!Number.isFinite(stock) || stock < quantity))
     ) {
       throw new HttpError(400, 'Um item do carrinho não está disponível.')
     }
@@ -340,8 +542,10 @@ async function loadProducts(items: CheckoutItemRequest[], env: Env, accessToken:
         image: typeof data.image === 'string' ? data.image : '',
         category: typeof data.category === 'string' ? data.category : 'Loja',
         description: typeof data.description === 'string' ? data.description : undefined,
-        shippingRequired: data.shippingRequired !== false,
+        shippingRequired,
         shipping: normalizeShippingPackage(data.shipping),
+        digitalDeliveryReady: data.digitalDeliveryReady === true,
+        digitalFileName: typeof data.digitalFileName === 'string' ? data.digitalFileName : undefined,
       },
     }
   }))
@@ -362,6 +566,14 @@ function assertPhysicalShippingIsQuoted(
 ) {
   if (products.some(({ product }) => product.shippingRequired !== false)) {
     throw new HttpError(409, 'O frete ainda precisa ser calculado antes do pagamento.')
+  }
+}
+
+function assertDigitalProductsReady(
+  products: Array<{ product: { shippingRequired?: boolean; digitalDeliveryReady?: boolean } }>,
+) {
+  if (products.some(({ product }) => product.shippingRequired === false && product.digitalDeliveryReady !== true)) {
+    throw new HttpError(409, 'Um produto digital ainda não possui arquivo disponível para entrega.')
   }
 }
 
@@ -564,6 +776,48 @@ async function updateFirestoreDocument(collection: string, documentId: string, d
   if (!response.ok) throw new Error('Não foi possível atualizar o pedido.')
 }
 
+async function setFirestoreDocument(collection: string, documentId: string, data: Record<string, unknown>, env: Env, accessToken: string) {
+  const response = await fetch(firestoreDocumentUrl(collection, documentId, env), {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: toFirestoreFields(data) }),
+  })
+  if (!response.ok) throw new Error('Não foi possível registrar o arquivo digital.')
+}
+
+async function queryFirestoreDocuments(
+  collection: string,
+  fieldPath: string,
+  value: string,
+  env: Env,
+  accessToken: string,
+) {
+  const response = await fetch(`${firestoreDatabaseUrl(env)}/documents:runQuery`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: collection }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath },
+            op: 'EQUAL',
+            value: { stringValue: value },
+          },
+        },
+      },
+    }),
+  })
+  if (!response.ok) throw new Error('Não foi possível consultar a biblioteca digital.')
+  const results = await response.json() as Array<{ document?: { name?: string; fields?: Record<string, unknown> } }>
+  return results.flatMap(result => {
+    const id = result.document?.name?.split('/').pop()
+    return id && result.document?.fields
+      ? [{ id, data: fromFirestoreFields(result.document.fields) as Record<string, unknown> }]
+      : []
+  })
+}
+
 function firestoreCollectionUrl(collection: string, env: Env) {
   return `${firestoreDatabaseUrl(env)}/documents/${collection}`
 }
@@ -653,6 +907,74 @@ function fromFirestoreValue(value: Record<string, unknown>): unknown {
   return undefined
 }
 
+function sanitizeDigitalFileName(value: string) {
+  const normalized = value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+  const safe = normalized.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 120)
+  if (!safe || !/\.(pdf|epub)$/i.test(safe)) throw new HttpError(400, 'Envie um arquivo PDF ou EPUB válido.')
+  return safe
+}
+
+function normalizeDigitalContentType(fileName: string, providedType: string) {
+  if (/\.pdf$/i.test(fileName)) {
+    if (providedType && !['application/pdf', 'application/octet-stream'].includes(providedType)) {
+      throw new HttpError(400, 'O conteúdo do arquivo não corresponde a um PDF.')
+    }
+    return 'application/pdf'
+  }
+  if (providedType && !['application/epub+zip', 'application/octet-stream', 'application/zip', ''].includes(providedType)) {
+    throw new HttpError(400, 'O conteúdo do arquivo não corresponde a um EPUB.')
+  }
+  return 'application/epub+zip'
+}
+
+async function signDownloadToken(payload: { entitlementId: string; userId: string; expiresAt: number }, secret: string) {
+  const encodedPayload = base64Url(JSON.stringify(payload))
+  const signature = await signHmac(encodedPayload, secret)
+  return `${encodedPayload}.${base64Url(signature)}`
+}
+
+async function verifyDownloadToken(token: string | null, secret: string) {
+  if (!token) throw new HttpError(401, 'Link de download inválido.')
+  const [encodedPayload, receivedSignature, extra] = token.split('.')
+  if (!encodedPayload || !receivedSignature || extra) throw new HttpError(401, 'Link de download inválido.')
+  const expectedSignature = base64Url(await signHmac(encodedPayload, secret))
+  if (!safeTokenEquals(receivedSignature, expectedSignature)) throw new HttpError(401, 'Link de download inválido.')
+
+  let payload: { entitlementId?: unknown; userId?: unknown; expiresAt?: unknown }
+  try {
+    payload = JSON.parse(base64UrlDecode(encodedPayload))
+  } catch {
+    throw new HttpError(401, 'Link de download inválido.')
+  }
+  if (
+    typeof payload.entitlementId !== 'string'
+    || typeof payload.userId !== 'string'
+    || typeof payload.expiresAt !== 'number'
+    || payload.expiresAt < Date.now()
+  ) {
+    throw new HttpError(401, 'Este link de download expirou.')
+  }
+  return payload as { entitlementId: string; userId: string; expiresAt: number }
+}
+
+async function signHmac(value: string, secret: string) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  return crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value))
+}
+
+function base64UrlDecode(value: string) {
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4)
+  const binary = atob(padded)
+  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0))
+  return new TextDecoder().decode(bytes)
+}
+
 function base64Url(value: string | ArrayBuffer) {
   const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : new Uint8Array(value)
   let binary = ''
@@ -701,7 +1023,7 @@ function corsResponse(request: Request, env: Env) {
     headers: {
       ...corsHeaders(request, env),
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Max-Age': '86400',
     },
   })
@@ -712,6 +1034,7 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 }
 
 export const testables = {
+  assertDigitalProductsReady,
   assertPhysicalShippingIsQuoted,
   buildAsaasCustomerData,
   buildOrderCustomer,
@@ -724,4 +1047,7 @@ export const testables = {
   resolveOrderStatusAfterPaymentEvent,
   requestAsaasCheckout,
   safeTokenEquals,
+  sanitizeDigitalFileName,
+  signDownloadToken,
+  verifyDownloadToken,
 }

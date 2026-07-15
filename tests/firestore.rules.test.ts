@@ -157,4 +157,15 @@ describe('negação padrão', () => {
     await assertFails(getDoc(doc(guest, 'private/document-1')))
     await assertFails(setDoc(doc(user, 'private/document-1'), { exposed: true }))
   })
+
+  it('mantém ativos e permissões digitais privados até para o comprador', async () => {
+    await seed('digitalAssets/product-1', { assetKey: 'private/file.pdf' })
+    await seed('digitalEntitlements/order-1_product-1', { userId: 'user-a', assetKey: 'private/file.pdf' })
+    const owner = testEnv.authenticatedContext('user-a').firestore()
+    const admin = testEnv.authenticatedContext('admin-1').firestore()
+
+    await assertFails(getDoc(doc(owner, 'digitalAssets/product-1')))
+    await assertFails(getDoc(doc(owner, 'digitalEntitlements/order-1_product-1')))
+    await assertFails(getDoc(doc(admin, 'digitalAssets/product-1')))
+  })
 })

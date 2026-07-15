@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { db } from '../../lib/firebase'
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
 import { Product } from '../../types' // Make sure Product type exists or define it locally if needed for admin specific fields
-import { Edit, Trash2, Plus, Search, PackageCheck, AlertTriangle } from 'lucide-react'
+import { Edit, Trash2, Plus, Search, PackageCheck, AlertTriangle, FileCheck2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { hasValidShippingPackage } from '../../lib/shipping'
 
@@ -93,15 +93,25 @@ export default function ProductList() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase ${product.stock && product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                            {product.stock || 0} unid.
-                                        </span>
+                                        {product.shippingRequired === false ? (
+                                            <span className="rounded-md bg-blue-100 px-2 py-1 text-xs font-bold uppercase text-blue-700">Ilimitado</span>
+                                        ) : (
+                                            <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase ${product.stock && product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                {product.stock || 0} unid.
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4">
                                         {product.shippingRequired === false ? (
-                                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1 text-xs font-bold text-blue-700">
-                                                Digital
-                                            </span>
+                                            product.digitalDeliveryReady ? (
+                                                <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1 text-xs font-bold text-blue-700">
+                                                    <FileCheck2 className="h-3.5 w-3.5" /> Digital pronto
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
+                                                    <AlertTriangle className="h-3.5 w-3.5" /> Arquivo pendente
+                                                </span>
+                                            )
                                         ) : hasValidShippingPackage(product) ? (
                                             <span className="inline-flex items-center gap-1 rounded-md bg-green-100 px-2 py-1 text-xs font-bold text-green-700">
                                                 <PackageCheck className="h-3.5 w-3.5" /> {product.shipping?.weightKg} kg

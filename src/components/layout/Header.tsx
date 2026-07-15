@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
-import { Baby, Home as HomeIcon, Users, ShoppingBag, ShoppingCart, Info, Mail, LogIn, LogOut, Package, LayoutDashboard, Menu, X } from 'lucide-react'
+import { Baby, Home as HomeIcon, Users, ShoppingBag, ShoppingCart, Info, Mail, LogIn, LogOut, Package, LayoutDashboard, Menu, X, BookOpen } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { publicMedia } from '../../lib/media'
@@ -50,6 +50,9 @@ export default function Header() {
                 <Link to="/orders" className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Meus Pedidos">
                   <Package className="h-6 w-6 text-slate-700" />
                 </Link>
+                <Link to="/library" className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Minha Biblioteca">
+                  <BookOpen className="h-6 w-6 text-slate-700" />
+                </Link>
                 <Link to="/profile" className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Meu Perfil">
                   <Users className="h-6 w-6 text-slate-700" />
                 </Link>
@@ -93,6 +96,7 @@ export default function Header() {
                   <NavLink onClick={() => setMobileOpen(false)} to="/admin" className={cls}><LayoutDashboard className="h-4 w-4 mr-2" />Administração</NavLink>
                 )}
                 <NavLink onClick={() => setMobileOpen(false)} to="/orders" className={cls}><Package className="h-4 w-4 mr-2" />Meus pedidos</NavLink>
+                <NavLink onClick={() => setMobileOpen(false)} to="/library" className={cls}><BookOpen className="h-4 w-4 mr-2" />Minha biblioteca</NavLink>
                 <NavLink onClick={() => setMobileOpen(false)} to="/profile" className={cls}><Users className="h-4 w-4 mr-2" />Meu perfil</NavLink>
                 <button
                   type="button"

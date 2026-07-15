@@ -103,6 +103,7 @@ Status: **em andamento**
 - [x] Registrar transportadora, código e link de rastreio no pedido.
 - [x] Exibir o rastreamento na área do cliente em tempo real.
 - [ ] Integrar cotação, etiqueta e rastreamento automático com o Melhor Envio.
+- [x] Implementar base segura para entrega automática de produtos digitais.
 - [x] Definir o CEP de expedição `68513-675` em Marabá/PA.
 - [x] Adicionar peso e dimensões da embalagem ao cadastro de produtos.
 - [ ] Preencher e validar os dados de embalagem de todos os produtos físicos.
@@ -192,6 +193,7 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 15/07/2026 | Catálogo logístico | Campos de peso, largura, altura e comprimento da embalagem adicionados ao administrador sem assumir medidas fictícias. | Em andamento |
 | 15/07/2026 | Git | Preparação do catálogo para frete calculado salva no commit `71a2535` e enviada para `origin/main`. | Concluído |
 | 15/07/2026 | Proteção de frete | Checkout deixou de exibir frete grátis fixo e pagamentos de produtos físicos foram bloqueados até existir cotação válida do Melhor Envio. | Concluído |
+| 15/07/2026 | Entrega digital | Upload privado no R2, liberação por webhook, biblioteca do cliente e download assinado por cinco minutos implementados. | Em validação |
 | 15/07/2026 | Deploy Worker | CEP de origem publicado na versão `2f9b8b2a-cda7-4ac0-adae-25372dc9aedc`. | Concluído |
 | 15/07/2026 | Deploy Pages | Cadastro logístico publicado no deployment `ed6b7bdf`. | Concluído |
 

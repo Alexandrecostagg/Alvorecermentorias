@@ -20,6 +20,7 @@ import AdminLayout from '../layouts/AdminLayout'
 import AdminRoute from '../pages/Admin/AdminRoute'
 import ProductList from '../pages/Admin/ProductList'
 import ProductForm from '../pages/Admin/ProductForm'
+import LibraryPage from '../pages/Library/LibraryPage'
 
 function NotFound() {
   return (
@@ -82,6 +83,15 @@ export default function App() {
               element={
                 <PrivateRoute>
                   <OrdersPage />
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/library"
+              element={
+                <PrivateRoute>
+                  <LibraryPage />
                 </PrivateRoute>
               }
             />

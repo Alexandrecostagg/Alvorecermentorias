@@ -2,17 +2,23 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { db } from '../../lib/firebase'
 import { collection, addDoc, getDoc, doc, updateDoc } from 'firebase/firestore'
-import { ArrowLeft, Save, Image as ImageIcon, Package } from 'lucide-react'
+import { ArrowLeft, Save, Image as ImageIcon, Package, FileText, Upload, Loader2, CheckCircle2 } from 'lucide-react'
 import type { Product, ShippingPackage } from '../../types'
 import { hasValidShippingPackage, normalizeShippingPackage } from '../../lib/shipping'
+import { useAuth } from '../../context/AuthContext'
+import { uploadDigitalAsset } from '../../lib/digitalDelivery'
 
 export default function ProductForm() {
     const navigate = useNavigate()
+    const { user } = useAuth()
     const { id } = useParams()
     const isEditing = !!id
 
     const [loading, setLoading] = useState(false)
     const [initialLoading, setInitialLoading] = useState(isEditing)
+    const [digitalFile, setDigitalFile] = useState<File | null>(null)
+    const [uploadingDigitalFile, setUploadingDigitalFile] = useState(false)
+    const [digitalUploadError, setDigitalUploadError] = useState<string | null>(null)
 
     const [formData, setFormData] = useState<Partial<Product>>({
         title: '',
@@ -103,6 +109,25 @@ export default function ProductForm() {
         }
     }
 
+    const handleDigitalUpload = async () => {
+        if (!user || !id || !digitalFile) return
+        setUploadingDigitalFile(true)
+        setDigitalUploadError(null)
+        try {
+            const uploaded = await uploadDigitalAsset(user, id, digitalFile)
+            setFormData(previous => ({
+                ...previous,
+                digitalDeliveryReady: true,
+                digitalFileName: uploaded.fileName,
+            }))
+            setDigitalFile(null)
+        } catch (error) {
+            setDigitalUploadError(error instanceof Error ? error.message : 'Não foi possível enviar o arquivo.')
+        } finally {
+            setUploadingDigitalFile(false)
+        }
+    }
+
     if (initialLoading) return <div className="p-8">Carregando...</div>
 
     return (
@@ -189,15 +214,22 @@ export default function ProductForm() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Estoque (Qtd)</label>
-                            <input
-                                name="stock"
-                                type="number"
-                                value={formData.stock}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-slate-900 transition-colors bg-slate-50"
-                            />
+                            <label className="block text-sm font-bold text-slate-700 mb-2">
+                                {formData.shippingRequired === false ? 'Disponibilidade' : 'Estoque (Qtd)'}
+                            </label>
+                            {formData.shippingRequired === false ? (
+                                <div className="w-full rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 font-semibold text-blue-700">Ilimitada</div>
+                            ) : (
+                                <input
+                                    name="stock"
+                                    type="number"
+                                    value={formData.stock}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-slate-900 transition-colors bg-slate-50"
+                                />
+                            )}
+                            {formData.shippingRequired === false && <p className="mt-1 text-xs text-slate-500">Produtos digitais não são bloqueados por estoque.</p>}
                         </div>
 
                         <div>
@@ -303,8 +335,44 @@ export default function ProductForm() {
                                 </label>
                             </div>
                         ) : (
-                            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                                Produto digital: não será incluído no cálculo do frete.
+                            <div className="space-y-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                                <div className="flex items-start gap-3 text-blue-800">
+                                    <FileText className="mt-0.5 h-5 w-5 flex-none" />
+                                    <div>
+                                        <p className="font-semibold">Entrega digital automática</p>
+                                        <p className="text-sm">O arquivo ficará privado e será liberado na biblioteca somente após a confirmação do pagamento.</p>
+                                    </div>
+                                </div>
+
+                                {formData.digitalDeliveryReady && formData.digitalFileName && (
+                                    <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+                                        <CheckCircle2 className="h-4 w-4" /> Arquivo atual: {formData.digitalFileName}
+                                    </div>
+                                )}
+
+                                {id ? (
+                                    <div className="space-y-3">
+                                        <input
+                                            type="file"
+                                            accept=".pdf,.epub,application/pdf,application/epub+zip"
+                                            onChange={event => setDigitalFile(event.target.files?.[0] || null)}
+                                            className="block w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:font-semibold file:text-white"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => void handleDigitalUpload()}
+                                            disabled={!digitalFile || uploadingDigitalFile}
+                                            className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+                                        >
+                                            {uploadingDigitalFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                            {formData.digitalDeliveryReady ? 'Substituir arquivo' : 'Enviar arquivo'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="rounded-lg bg-white px-3 py-2 text-sm text-blue-700">Salve o produto primeiro. Depois, abra-o novamente para enviar o e-book.</p>
+                                )}
+
+                                {digitalUploadError && <p role="alert" className="text-sm font-medium text-red-700">{digitalUploadError}</p>}
                             </div>
                         )}
                     </fieldset>

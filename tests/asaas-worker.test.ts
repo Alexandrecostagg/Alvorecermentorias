@@ -63,6 +63,38 @@ describe('Asaas Worker', () => {
     }])).not.toThrow()
   })
 
+  it('impede a venda digital antes do arquivo privado estar pronto', () => {
+    expect(() => testables.assertDigitalProductsReady([{
+      product: { shippingRequired: false, digitalDeliveryReady: false },
+    }])).toThrow('não possui arquivo')
+    expect(() => testables.assertDigitalProductsReady([{
+      product: { shippingRequired: false, digitalDeliveryReady: true },
+    }])).not.toThrow()
+  })
+
+  it('gera links assinados que expiram e rejeita adulteração', async () => {
+    const now = Date.now()
+    vi.spyOn(Date, 'now').mockReturnValue(now)
+    const token = await testables.signDownloadToken({
+      entitlementId: 'order_product',
+      userId: 'user-1',
+      expiresAt: now + 60_000,
+    }, 'segredo-de-download')
+
+    await expect(testables.verifyDownloadToken(token, 'segredo-de-download')).resolves.toMatchObject({
+      entitlementId: 'order_product',
+      userId: 'user-1',
+    })
+    await expect(testables.verifyDownloadToken(`${token}x`, 'segredo-de-download')).rejects.toThrow('inválido')
+    vi.spyOn(Date, 'now').mockReturnValue(now + 60_001)
+    await expect(testables.verifyDownloadToken(token, 'segredo-de-download')).rejects.toThrow('expirou')
+  })
+
+  it('aceita somente nomes seguros de PDF ou EPUB', () => {
+    expect(testables.sanitizeDigitalFileName('Meu E-book Fé.pdf')).toBe('Meu-E-book-Fe.pdf')
+    expect(() => testables.sanitizeDigitalFileName('../../arquivo.exe')).toThrow('PDF ou EPUB')
+  })
+
   it('migra o ID numérico de um carrinho antigo para o documento atual', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(null, { status: 404 }))
@@ -100,6 +132,38 @@ describe('Asaas Worker', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
     const query = JSON.parse(String(fetchMock.mock.calls[1][1]?.body))
     expect(query.structuredQuery.where.fieldFilter.value).toEqual({ integerValue: '1' })
+  })
+
+  it('não aplica estoque físico a um produto digital pronto', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      fields: {
+        title: { stringValue: 'E-book Alvorecer' },
+        price: { doubleValue: 29.9 },
+        stock: { integerValue: '0' },
+        shippingRequired: { booleanValue: false },
+        digitalDeliveryReady: { booleanValue: true },
+      },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+
+    const products = await testables.loadProducts(
+      [{ productId: 'ebook-1', quantity: 1 }],
+      {
+        APP_ORIGIN: 'https://example.com',
+        FIREBASE_PROJECT_ID: 'project',
+        FIREBASE_WEB_API_KEY: 'firebase-key',
+        FIREBASE_SERVICE_ACCOUNT_JSON: '{}',
+        ASAAS_API_BASE_URL: 'https://api-sandbox.asaas.com/v3',
+        ASAAS_ACCESS_TOKEN: 'asaas-key',
+        ASAAS_WEBHOOK_TOKEN: 'webhook-key',
+      },
+      'google-token',
+    )
+
+    expect(products[0].product).toMatchObject({
+      id: 'ebook-1',
+      shippingRequired: false,
+      digitalDeliveryReady: true,
+    })
   })
 
   it('só envia dados pessoais à Asaas quando o perfil tem CPF válido', () => {

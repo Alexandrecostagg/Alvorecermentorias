@@ -8,3 +8,8 @@ APP_ORIGIN = "https://alvorecermentorias-web.pages.dev"
 FIREBASE_PROJECT_ID = "alvorecermentorias"
 ASAAS_API_BASE_URL = "https://api-sandbox.asaas.com/v3"
 SHIPPING_ORIGIN_POSTAL_CODE = "68513675"
+
+[[r2_buckets]]
+binding = "DIGITAL_ASSETS"
+bucket_name = "alvorecermentorias-digital"
+preview_bucket_name = "alvorecermentorias-digital"

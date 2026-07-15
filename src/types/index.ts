@@ -17,6 +17,8 @@ export type Product = {
   stock?: number
   shippingRequired?: boolean
   shipping?: ShippingPackage
+  digitalDeliveryReady?: boolean
+  digitalFileName?: string
 }
 
 export type ShippingPackage = {
@@ -84,4 +86,14 @@ export type Order = {
   deliveredAt?: string
   customer?: OrderCustomer
   shipment?: OrderShipment
+}
+
+export type LibraryItem = {
+  id: string
+  orderId: string
+  productId: string
+  title: string
+  image?: string
+  fileName: string
+  grantedAt: string
 }
