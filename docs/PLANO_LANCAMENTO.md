@@ -1,6 +1,6 @@
 # Plano de lançamento — Alvorecer Mentorias
 
-Atualizado em: 14 de julho de 2026  
+Atualizado em: 15 de julho de 2026
 Objetivo: colocar no ar um MVP comercial confiável no menor prazo possível.
 
 ## Escopo do MVP
@@ -58,6 +58,9 @@ Status: **em andamento**
 - [x] Corrigir ou remover ordenação e favoritos sem função.
 - [x] Revisar modal e detalhes de produto.
 - [x] Preencher o endereço automaticamente a partir de um CEP válido.
+- [x] Reestruturar a home com proposta de valor, caminhos, confiança e vitrine dinâmica.
+- [x] Reposicionar a loja com apresentação editorial e identificação de produto físico/digital.
+- [x] Retirar avaliações de demonstração da vitrine pública.
 - [ ] Preencher contato, endereço e redes oficiais.
 - [ ] Publicar Política de Privacidade e Termos de Uso.
 - [ ] Otimizar imagens grandes e retirar duplicação desnecessária no Pages.
@@ -199,6 +202,10 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 15/07/2026 | Deploy digital | Biblioteca publicada no deployment `2aaa7374`; Worker publicado na versão `b4d60edb-9d15-47a1-a7e8-21e0b3cf4ac7`. | Concluído |
 | 15/07/2026 | Deploy Worker | CEP de origem publicado na versão `2f9b8b2a-cda7-4ac0-adae-25372dc9aedc`. | Concluído |
 | 15/07/2026 | Deploy Pages | Cadastro logístico publicado no deployment `ed6b7bdf`. | Concluído |
+| 15/07/2026 | Benchmark UX | Home e loja da Orvalho analisadas como referência de arquitetura comercial, sem copiar seus excessos de navegação e carrosséis. | Concluído |
+| 15/07/2026 | Nova home | Hero editorial com fotografia própria, proposta de valor, caminhos, benefícios, produtos reais e seção institucional implementados. | Concluído |
+| 15/07/2026 | Nova loja | Abertura comercial, sinais de confiança e diferenciação de produtos físicos e digitais adicionados; avaliações fictícias removidas da interface. | Concluído |
+| 15/07/2026 | Validação UX | Home e loja verificadas em desktop e celular, sem estouro horizontal; imagens, filtros, produtos e chamadas carregando corretamente. | Concluído |
 
 ## Regras de trabalho
 

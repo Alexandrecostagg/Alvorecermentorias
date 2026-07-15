@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Check, Search, ShoppingBag, SlidersHorizontal, Star, X } from 'lucide-react'
+import { BadgeCheck, Check, FileText, Package, PackageCheck, Search, ShieldCheck, ShoppingBag, SlidersHorizontal, X } from 'lucide-react'
 import ProductDetailsModal from '../../components/modals/ProductDetailsModal'
 import ProductImage from '../../components/ui/ProductImage'
 import { useProducts } from '../../hooks/useProducts'
@@ -11,6 +11,11 @@ const money = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
 })
+
+function isDigital(product: Product) {
+  const type = product.type?.toLocaleLowerCase('pt-BR') ?? ''
+  return product.shippingRequired === false || type.includes('digital') || type.includes('ebook') || type.includes('e-book')
+}
 
 export default function StorePage() {
   const { products, loading, error } = useProducts({ section: 'store' })
@@ -72,12 +77,33 @@ export default function StorePage() {
     <div className="bg-[#FDFBF7] min-h-screen font-sans">
       <ProductDetailsModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
 
-      <div className="bg-[#F4F1EA] border-b border-[#Eae5d8] py-12 md:py-20">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-serif text-slate-900 mb-4 tracking-tight">Livraria & Recursos</h1>
-          <p className="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed font-light">
-            Uma curadoria de materiais para edificar sua fé e capacitar seu ministério.
-          </p>
+      <div className="relative overflow-hidden border-b border-slate-800 bg-[#0B172A] py-14 text-white md:py-20">
+        <div className="absolute -right-24 top-0 h-80 w-80 rounded-full bg-[#D7A93E]/15 blur-3xl" aria-hidden="true" />
+        <div className="relative mx-auto max-w-7xl px-4 md:px-6">
+          <div className="max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#F4C048]">Livraria Alvorecer</p>
+            <h1 className="mt-4 font-serif text-4xl font-bold tracking-tight md:text-6xl">Conteúdo que não termina na última página.</h1>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
+              Livros e recursos selecionados para transformar aprendizado em prática, dentro de casa, na igreja e na vida.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-b border-[#E8E1D4] bg-white">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 divide-y divide-[#E8E1D4] px-4 sm:grid-cols-3 sm:divide-x sm:divide-y-0 md:px-6">
+          <div className="flex items-center gap-3 py-5 sm:px-5">
+            <ShieldCheck className="h-6 w-6 text-[#A97916]" />
+            <div><p className="text-sm font-bold text-slate-900">Pagamento protegido</p><p className="text-xs text-slate-500">Ambiente seguro Asaas</p></div>
+          </div>
+          <div className="flex items-center gap-3 py-5 sm:px-5">
+            <PackageCheck className="h-6 w-6 text-[#A97916]" />
+            <div><p className="text-sm font-bold text-slate-900">Acompanhe seu pedido</p><p className="text-xs text-slate-500">Tudo reunido na sua conta</p></div>
+          </div>
+          <div className="flex items-center gap-3 py-5 sm:px-5">
+            <BadgeCheck className="h-6 w-6 text-[#A97916]" />
+            <div><p className="text-sm font-bold text-slate-900">Curadoria com propósito</p><p className="text-xs text-slate-500">Recursos para uma fé prática</p></div>
+          </div>
         </div>
       </div>
 
@@ -204,13 +230,19 @@ export default function StorePage() {
 }
 
 function ProductCard({ product, onView }: { product: Product; onView: () => void }) {
+  const digital = isDigital(product)
+
   return (
-    <article className="group bg-white rounded-xl border border-[#Eae5d8] hover:shadow-xl transition-all duration-300 overflow-hidden">
+    <article className="group overflow-hidden rounded-2xl border border-[#Eae5d8] bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       <div className="relative aspect-[4/5] overflow-hidden bg-[#F4F1EA]">
         <ProductImage src={product.image} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
         {product.featured && (
           <span className="absolute top-0 left-0 bg-slate-900 text-white text-[10px] uppercase font-bold tracking-widest px-3 py-1">Destaque</span>
         )}
+        <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold text-slate-800 shadow-sm backdrop-blur">
+          {digital ? <FileText className="h-3.5 w-3.5" /> : <Package className="h-3.5 w-3.5" />}
+          {digital ? 'Digital' : 'Produto físico'}
+        </span>
       </div>
 
       <div className="p-5">
@@ -225,12 +257,6 @@ function ProductCard({ product, onView }: { product: Product; onView: () => void
             )}
             <span className="text-lg font-bold text-slate-900">{money.format(product.price)}</span>
           </div>
-          {typeof product.rating === 'number' && (
-            <div className="flex items-center gap-1 text-amber-400 text-xs" aria-label={`Avaliação ${product.rating} de 5`}>
-              <Star className="h-3 w-3 fill-current" />
-              <span className="text-slate-500">{product.rating}</span>
-            </div>
-          )}
         </div>
 
         <button type="button" onClick={onView} className="mt-5 w-full bg-slate-900 text-white py-3 rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-alvorecer-gold transition-colors">

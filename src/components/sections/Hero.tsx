@@ -1,118 +1,75 @@
-import { useState, useEffect } from 'react'
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight, BookOpen, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-const SLIDES = [
-  {
-    id: 1,
-    src: 'https://images.pexels.com/photos/346529/pexels-photo-346529.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    alt: 'Paisagem ao amanhecer representando uma nova jornada de fé',
-    tag: 'Livraria Alvorecer',
-    title: <>Recursos para fortalecer sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-alvorecer-gold to-yellow-200">caminhada de fé.</span></>,
-    desc: 'Encontre livros, devocionais e materiais selecionados para sua vida, família e ministério.',
-    primaryAction: { text: 'Explorar a Loja', link: '/loja' },
-    secondaryAction: { text: 'Conhecer a Alvorecer', link: '/sobre' }
-  },
-  {
-    id: 2,
-    src: 'https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=1260',
-    alt: 'Família reunida representando a coleção infantil Alvorecer',
-    tag: 'Lançamento Loja',
-    title: <>Coleção <span className="text-sky-400">Kids</span> Disponível</>,
-    desc: 'Materiais lúdicos para ensinar o caminho da luz aos pequenos desde cedo.',
-    primaryAction: { text: 'Ver Coleção Kids', link: '/kids' },
-    secondaryAction: null
-  }
-]
-
 export default function Hero() {
-  const [current, setCurrent] = useState(0)
-
-  // Auto-play
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrent(prev => (prev + 1) % SLIDES.length)
-    }, 6000)
-    return () => clearInterval(timer)
-  }, [])
-
-  const next = () => setCurrent(p => (p + 1) % SLIDES.length)
-  const prev = () => setCurrent(p => (p === 0 ? SLIDES.length - 1 : p - 1))
-
   return (
-    <section className="relative h-[600px] lg:h-[700px] bg-slate-900 group overflow-hidden">
-
-      {/* Slides */}
-      {SLIDES.map((slide, index) => (
-        <div
-          key={slide.id}
-          className={`absolute inset-0 transition-opacity duration-1000 ${index === current ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-        >
-          {/* Background */}
-          <div className="absolute inset-0">
-            <img src={slide.src} alt={slide.alt} className="w-full h-full object-cover opacity-30" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/40 to-transparent" />
-          </div>
-
-          {/* Content */}
-          <div className="relative z-20 h-full max-w-6xl mx-auto px-4 flex items-center">
-            <div className="max-w-3xl transform transition-all duration-1000 translate-y-0 opacity-100">
-              <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold mb-6 border bg-alvorecer-gold/20 text-alvorecer-gold border-alvorecer-gold/30">
-                {slide.tag}
-              </span>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight mb-6 text-white">
-                {slide.title}
-              </h1>
-              <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-2xl leading-relaxed">
-                {slide.desc}
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                {slide.primaryAction && (
-                  <Link
-                    to={slide.primaryAction.link}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-alvorecer-gold px-8 py-4 text-slate-900 font-bold hover:bg-alvorecer-gold/90 transition-all shadow-lg shadow-alvorecer-gold/20 hover:scale-105"
-                  >
-                    {slide.primaryAction.text}
-                    <ArrowRight className="h-5 w-5" />
-                  </Link>
-                )}
-                {slide.secondaryAction && (
-                  <Link
-                    to={slide.secondaryAction.link}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 backdrop-blur-sm px-8 py-4 text-white font-semibold hover:bg-white/20 transition-all border border-white/10"
-                  >
-                    {slide.secondaryAction.text}
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-
-      {/* Navigation arrows */}
-      <button aria-label="Slide anterior" onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
-        <ChevronLeft className="h-6 w-6" />
-      </button>
-      <button aria-label="Próximo slide" onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
-        <ChevronRight className="h-6 w-6" />
-      </button>
-
-      {/* Dots Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-2">
-        {SLIDES.map((_, i) => (
-          <button
-            key={i}
-            aria-label={`Exibir slide ${i + 1}`}
-            aria-current={i === current ? 'true' : undefined}
-            onClick={() => setCurrent(i)}
-            className={`w-3 h-3 rounded-full transition-all ${i === current ? 'bg-alvorecer-gold w-8' : 'bg-white/30 hover:bg-white/50'}`}
-          />
-        ))}
+    <section className="relative overflow-hidden bg-[#0B172A] text-white">
+      <div className="absolute inset-0 opacity-40" aria-hidden="true">
+        <div className="absolute -left-24 top-20 h-80 w-80 rounded-full bg-[#D7A93E]/20 blur-3xl" />
+        <div className="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-[#1E3856]/80 to-transparent" />
       </div>
 
+      <div className="relative mx-auto grid min-h-[660px] max-w-7xl items-center gap-10 px-4 py-16 md:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-20">
+        <div className="relative z-10 max-w-2xl">
+          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#F4C048]/30 bg-[#F4C048]/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#F6CF72]">
+            <Sparkles className="h-4 w-4" />
+            Fé que amadurece. Propósito que transforma.
+          </div>
+
+          <h1 className="font-serif text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
+            Conteúdo bíblico para viver uma fé{' '}
+            <span className="text-[#F4C048]">prática todos os dias.</span>
+          </h1>
+
+          <p className="mt-7 max-w-xl text-lg leading-8 text-slate-300 md:text-xl">
+            Livros, recursos e experiências para fortalecer sua caminhada com Deus, sua família e seu chamado.
+          </p>
+
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <Link
+              to="/loja"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F4C048] px-7 py-4 font-bold text-slate-950 shadow-lg shadow-[#F4C048]/15 transition hover:-translate-y-0.5 hover:bg-[#FFD36B]"
+            >
+              Explorar conteúdos
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+            <Link
+              to="/sobre"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 px-7 py-4 font-semibold text-white transition hover:bg-white/10"
+            >
+              Conheça nossa missão
+            </Link>
+          </div>
+
+          <div className="mt-10 flex items-start gap-3 border-l-2 border-[#F4C048] pl-4 text-sm leading-6 text-slate-300">
+            <BookOpen className="mt-0.5 h-5 w-5 flex-none text-[#F4C048]" />
+            <p>Uma curadoria cristã criada para transformar conhecimento em vida.</p>
+          </div>
+        </div>
+
+        <div className="relative mx-auto w-full max-w-[540px] lg:mx-0 lg:ml-auto">
+          <div className="absolute -inset-4 rounded-[2.5rem] border border-white/10" aria-hidden="true" />
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-slate-800 shadow-2xl shadow-black/30">
+            <img
+              src="/alexandre-gomes-costa.jpg"
+              alt="Alexandre Costa compartilhando uma mensagem"
+              className="h-full w-full object-cover object-[50%_34%]"
+              fetchPriority="high"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#091321] via-transparent to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+              <p className="max-w-sm font-serif text-xl font-semibold leading-snug sm:text-2xl">
+                “Conhecer a verdade é o começo. Vivê-la é a transformação.”
+              </p>
+              <p className="mt-3 text-sm font-semibold uppercase tracking-[0.16em] text-[#F4C048]">Alvorecer Mentorias</p>
+            </div>
+          </div>
+          <div className="absolute -bottom-5 -left-3 rounded-2xl border border-white/10 bg-white px-5 py-4 text-slate-900 shadow-xl sm:-left-8">
+            <strong className="block text-2xl font-black text-[#A97916]">Um novo dia</strong>
+            <span className="text-sm text-slate-600">para sua caminhada de fé</span>
+          </div>
+        </div>
+      </div>
     </section>
   )
 }
