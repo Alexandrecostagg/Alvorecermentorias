@@ -193,7 +193,10 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 15/07/2026 | Catálogo logístico | Campos de peso, largura, altura e comprimento da embalagem adicionados ao administrador sem assumir medidas fictícias. | Em andamento |
 | 15/07/2026 | Git | Preparação do catálogo para frete calculado salva no commit `71a2535` e enviada para `origin/main`. | Concluído |
 | 15/07/2026 | Proteção de frete | Checkout deixou de exibir frete grátis fixo e pagamentos de produtos físicos foram bloqueados até existir cotação válida do Melhor Envio. | Concluído |
-| 15/07/2026 | Entrega digital | Upload privado no R2, liberação por webhook, biblioteca do cliente e download assinado por cinco minutos implementados. | Em validação |
+| 15/07/2026 | Entrega digital | Upload privado no R2, liberação por webhook, biblioteca do cliente e download assinado por cinco minutos implementados. | Concluído |
+| 15/07/2026 | Segurança digital | Ativos e permissões bloqueados no Firestore; acesso sem login e download sem assinatura rejeitados pelo Worker publicado. | Concluído |
+| 15/07/2026 | Cloudflare R2 | Bucket privado exclusivo `alvorecermentorias-digital` criado e vinculado ao Worker. | Concluído |
+| 15/07/2026 | Deploy digital | Biblioteca publicada no deployment `2aaa7374`; Worker publicado na versão `b4d60edb-9d15-47a1-a7e8-21e0b3cf4ac7`. | Concluído |
 | 15/07/2026 | Deploy Worker | CEP de origem publicado na versão `2f9b8b2a-cda7-4ac0-adae-25372dc9aedc`. | Concluído |
 | 15/07/2026 | Deploy Pages | Cadastro logístico publicado no deployment `ed6b7bdf`. | Concluído |
 
