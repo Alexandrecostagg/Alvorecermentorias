@@ -54,7 +54,6 @@ export default function Hero() {
               src="/alexandre-gomes-costa.jpg"
               alt="Alexandre Costa compartilhando uma mensagem"
               className="h-full w-full object-cover object-[50%_34%]"
-              fetchPriority="high"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#091321] via-transparent to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
