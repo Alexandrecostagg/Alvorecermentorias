@@ -6,6 +6,7 @@ interface Env {
   ASAAS_API_BASE_URL: string
   ASAAS_ACCESS_TOKEN: string
   ASAAS_WEBHOOK_TOKEN: string
+  SHIPPING_ORIGIN_POSTAL_CODE: string
 }
 
 type CheckoutItemRequest = { productId: string; quantity: number }

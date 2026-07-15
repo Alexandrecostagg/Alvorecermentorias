@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { db } from '../../lib/firebase'
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
 import { Product } from '../../types' // Make sure Product type exists or define it locally if needed for admin specific fields
-import { Edit, Trash2, Plus, Search } from 'lucide-react'
+import { Edit, Trash2, Plus, Search, PackageCheck, AlertTriangle } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { hasValidShippingPackage } from '../../lib/shipping'
 
 // Reuse Product type or define a compatible one
 // Assuming Product type is adequate from types/index.ts
@@ -11,6 +12,7 @@ import { Link } from 'react-router-dom'
 export default function ProductList() {
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
+    const [search, setSearch] = useState('')
 
     useEffect(() => {
         fetchProducts()
@@ -41,6 +43,11 @@ export default function ProductList() {
 
     if (loading) return <div className="p-8">Carregando produtos...</div>
 
+    const normalizedSearch = search.trim().toLocaleLowerCase('pt-BR')
+    const visibleProducts = products.filter(product => !normalizedSearch
+        || product.title.toLocaleLowerCase('pt-BR').includes(normalizedSearch)
+        || product.category.toLocaleLowerCase('pt-BR').includes(normalizedSearch))
+
     return (
         <div>
             <div className="flex justify-between items-center mb-8">
@@ -55,7 +62,9 @@ export default function ProductList() {
                     <div className="relative max-w-md">
                         <Search className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
                         <input
-                            type="text"
+                            type="search"
+                            value={search}
+                            onChange={event => setSearch(event.target.value)}
                             placeholder="Buscar produtos..."
                             className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400"
                         />
@@ -68,12 +77,13 @@ export default function ProductList() {
                             <tr>
                                 <th className="px-6 py-4">Produto</th>
                                 <th className="px-6 py-4">Estoque</th>
+                                <th className="px-6 py-4">Embalagem</th>
                                 <th className="px-6 py-4">Preço</th>
                                 <th className="px-6 py-4 text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {products.map(product => (
+                            {visibleProducts.map(product => (
                                 <tr key={product.id} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4 flex items-center gap-4">
                                         <img src={product.image} alt={product.title} className="w-12 h-12 object-cover rounded-lg border border-slate-100" />
@@ -86,6 +96,21 @@ export default function ProductList() {
                                         <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase ${product.stock && product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                             {product.stock || 0} unid.
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {product.shippingRequired === false ? (
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1 text-xs font-bold text-blue-700">
+                                                Digital
+                                            </span>
+                                        ) : hasValidShippingPackage(product) ? (
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-green-100 px-2 py-1 text-xs font-bold text-green-700">
+                                                <PackageCheck className="h-3.5 w-3.5" /> {product.shipping?.weightKg} kg
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
+                                                <AlertTriangle className="h-3.5 w-3.5" /> Pendente
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 font-bold text-slate-900">
                                         R$ {product.price.toFixed(2)}
@@ -107,6 +132,9 @@ export default function ProductList() {
                             ))}
                         </tbody>
                     </table>
+                    {visibleProducts.length === 0 && (
+                        <div className="p-10 text-center text-slate-500">Nenhum produto encontrado.</div>
+                    )}
                 </div>
             </div>
         </div>

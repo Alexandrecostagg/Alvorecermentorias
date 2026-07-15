@@ -15,6 +15,15 @@ export type Product = {
   section?: 'store' | 'kids'
   type?: string
   stock?: number
+  shippingRequired?: boolean
+  shipping?: ShippingPackage
+}
+
+export type ShippingPackage = {
+  weightKg: number
+  widthCm: number
+  heightCm: number
+  lengthCm: number
 }
 
 export type Address = {

@@ -103,6 +103,10 @@ Status: **em andamento**
 - [x] Registrar transportadora, código e link de rastreio no pedido.
 - [x] Exibir o rastreamento na área do cliente em tempo real.
 - [ ] Integrar cotação, etiqueta e rastreamento automático com o Melhor Envio.
+- [x] Definir o CEP de expedição `68513-675` em Marabá/PA.
+- [x] Adicionar peso e dimensões da embalagem ao cadastro de produtos.
+- [ ] Preencher e validar os dados de embalagem de todos os produtos físicos.
+- [ ] Criar aplicativo próprio no Sandbox do Melhor Envio e autorizar os escopos mínimos.
 
 Critério de conclusão: matriz crítica aprovada e erros operacionais visíveis
 nos logs sem expor dados pessoais ou segredos.
@@ -183,6 +187,9 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 14/07/2026 | Git | Operação de pedidos e rastreio salva no commit `5f7c424` e enviada para `origin/main`. | Concluído |
 | 14/07/2026 | Deploy Worker | Proteção das transições logísticas e snapshot do cliente publicados na versão `2bfea851-7576-439e-b9e6-ae4216aeb7ca`. | Concluído |
 | 14/07/2026 | Deploy Pages | Painel operacional e acompanhamento publicados no deployment `eedba24a-7fa3-48ab-bbca-3955c1f256fa`. | Concluído |
+| 15/07/2026 | Política de frete | Melhor Envio definido para a loja própria; marketplaces usarão suas logísticas nativas e o cliente pagará o frete real no lançamento. | Concluído |
+| 15/07/2026 | Origem logística | CEP `68513-675`, Rua Contorno, São Félix I, Marabá/PA, definido como origem das cotações. | Concluído |
+| 15/07/2026 | Catálogo logístico | Campos de peso, largura, altura e comprimento da embalagem adicionados ao administrador sem assumir medidas fictícias. | Em andamento |
 
 ## Regras de trabalho
 

@@ -33,6 +33,10 @@ e o checkout.
 6. Copie a URL publicada para `VITE_PAYMENT_API_BASE_URL` no `.env.local` do
    aplicativo e reinicie o servidor local.
 
+O CEP de origem das futuras cotações do Melhor Envio fica somente no Worker,
+na variável `SHIPPING_ORIGIN_POSTAL_CODE`. Para a Alvorecer, o valor definido é
+`68513675` (Marabá/PA).
+
 ## Webhook no Asaas
 
 No painel Asaas, crie um webhook apontando para:

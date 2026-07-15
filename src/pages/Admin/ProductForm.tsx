@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { db } from '../../lib/firebase'
 import { collection, addDoc, getDoc, doc, updateDoc } from 'firebase/firestore'
-import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react'
-import { Product } from '../../types'
+import { ArrowLeft, Save, Image as ImageIcon, Package } from 'lucide-react'
+import type { Product, ShippingPackage } from '../../types'
+import { hasValidShippingPackage, normalizeShippingPackage } from '../../lib/shipping'
 
 export default function ProductForm() {
     const navigate = useNavigate()
@@ -20,7 +21,9 @@ export default function ProductForm() {
         stock: 0,
         category: '',
         image: '',
-        section: 'store'
+        section: 'store',
+        shippingRequired: true,
+        shipping: normalizeShippingPackage(),
     })
 
     const fetchProduct = useCallback(async (productId: string) => {
@@ -28,7 +31,12 @@ export default function ProductForm() {
             const docRef = doc(db, 'products', productId)
             const docSnap = await getDoc(docRef)
             if (docSnap.exists()) {
-                setFormData(docSnap.data() as Product)
+                const product = docSnap.data() as Product
+                setFormData({
+                    ...product,
+                    shippingRequired: product.shippingRequired !== false,
+                    shipping: normalizeShippingPackage(product.shipping),
+                })
             } else {
                 alert('Produto não encontrado')
                 navigate('/admin/products')
@@ -54,8 +62,22 @@ export default function ProductForm() {
         }))
     }
 
+    const handleShippingChange = (field: keyof ShippingPackage, value: string) => {
+        setFormData(previous => ({
+            ...previous,
+            shipping: {
+                ...normalizeShippingPackage(previous.shipping),
+                [field]: Number(value),
+            },
+        }))
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!hasValidShippingPackage(formData)) {
+            alert('Informe peso, largura, altura e comprimento da embalagem do produto.')
+            return
+        }
         setLoading(true)
 
         try {
@@ -203,6 +225,89 @@ export default function ProductForm() {
                             </select>
                         </div>
                     </div>
+
+                    <fieldset className="rounded-2xl border border-slate-200 bg-slate-50 p-6 space-y-5">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                                    <Package className="h-5 w-5" /> Embalagem para envio
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Meça o produto já embalado. Esses dados serão enviados ao Melhor Envio para calcular o preço real.
+                                </p>
+                            </div>
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.shippingRequired !== false}
+                                    onChange={event => setFormData(previous => ({ ...previous, shippingRequired: event.target.checked }))}
+                                    className="h-4 w-4 rounded border-slate-300"
+                                />
+                                Produto físico
+                            </label>
+                        </div>
+
+                        {formData.shippingRequired !== false ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <label className="text-sm font-bold text-slate-700">
+                                    Peso (kg)
+                                    <input
+                                        type="number"
+                                        min="0.001"
+                                        step="0.001"
+                                        required
+                                        value={formData.shipping?.weightKg || ''}
+                                        onChange={event => handleShippingChange('weightKg', event.target.value)}
+                                        placeholder="Ex.: 0,450"
+                                        className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-slate-900"
+                                    />
+                                </label>
+                                <label className="text-sm font-bold text-slate-700">
+                                    Largura (cm)
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        required
+                                        value={formData.shipping?.widthCm || ''}
+                                        onChange={event => handleShippingChange('widthCm', event.target.value)}
+                                        placeholder="Ex.: 16"
+                                        className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-slate-900"
+                                    />
+                                </label>
+                                <label className="text-sm font-bold text-slate-700">
+                                    Altura (cm)
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        required
+                                        value={formData.shipping?.heightCm || ''}
+                                        onChange={event => handleShippingChange('heightCm', event.target.value)}
+                                        placeholder="Ex.: 4"
+                                        className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-slate-900"
+                                    />
+                                </label>
+                                <label className="text-sm font-bold text-slate-700">
+                                    Comprimento (cm)
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        required
+                                        value={formData.shipping?.lengthCm || ''}
+                                        onChange={event => handleShippingChange('lengthCm', event.target.value)}
+                                        placeholder="Ex.: 23"
+                                        className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-slate-900"
+                                    />
+                                </label>
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                                Produto digital: não será incluído no cálculo do frete.
+                            </div>
+                        )}
+                    </fieldset>
 
                     <div className="pt-6 border-t border-slate-100 flex justify-end">
                         <button

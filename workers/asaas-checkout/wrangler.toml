@@ -7,3 +7,4 @@ workers_dev = true
 APP_ORIGIN = "https://alvorecermentorias-web.pages.dev"
 FIREBASE_PROJECT_ID = "alvorecermentorias"
 ASAAS_API_BASE_URL = "https://api-sandbox.asaas.com/v3"
+SHIPPING_ORIGIN_POSTAL_CODE = "68513675"
