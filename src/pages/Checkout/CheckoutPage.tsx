@@ -8,6 +8,7 @@ import PaymentSelector from '../../components/checkout/PaymentSelector'
 import { startAsaasCheckout } from '../../lib/payments'
 import type { AsaasBillingType } from '../../lib/payments'
 import ProductImage from '../../components/ui/ProductImage'
+import { cartRequiresShipping } from '../../lib/shipping'
 
 export default function CheckoutPage() {
     const { items, removeItem, updateQuantity, totalPrice, clear } = useCart()
@@ -17,9 +18,11 @@ export default function CheckoutPage() {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<AsaasBillingType | null>(null)
     const [isProcessing, setIsProcessing] = useState(false)
     const [checkoutError, setCheckoutError] = useState<string | null>(null)
+    const requiresShipping = cartRequiresShipping(items)
+    const shippingQuoteReady = !requiresShipping
 
     const handleCheckout = async () => {
-        if (!user || !selectedAddressId || !selectedPaymentMethod) return
+        if (!user || !selectedAddressId || !selectedPaymentMethod || !shippingQuoteReady) return
 
         setIsProcessing(true)
         setCheckoutError(null)
@@ -166,13 +169,21 @@ export default function CheckoutPage() {
 
                                 <div className="flex justify-between text-slate-600">
                                     <span>Frete</span>
-                                    <span className="text-green-600 font-medium">Grátis</span>
+                                    <span className={requiresShipping ? 'font-medium text-amber-700' : 'font-medium text-slate-600'}>
+                                        {requiresShipping ? 'A calcular' : 'Não se aplica'}
+                                    </span>
                                 </div>
                                 <div className="border-t border-slate-100 pt-3 flex justify-between font-bold text-lg text-slate-900">
                                     <span>Total</span>
-                                    <span>R$ {totalPrice.toFixed(2)}</span>
+                                    <span>{requiresShipping ? 'A calcular' : `R$ ${totalPrice.toFixed(2)}`}</span>
                                 </div>
                             </div>
+
+                            {requiresShipping && (
+                                <div role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                                    O frete ainda precisa ser calculado. O pagamento ficará bloqueado até a cotação do Melhor Envio estar conectada.
+                                </div>
+                            )}
 
                             {!selectedAddressId && (
                                 <div className="mb-4 text-xs text-center text-red-500 font-medium">
@@ -195,7 +206,7 @@ export default function CheckoutPage() {
                             <button
                                 type="button"
                                 onClick={handleCheckout}
-                                disabled={!selectedAddressId || !selectedPaymentMethod || isProcessing}
+                                disabled={!selectedAddressId || !selectedPaymentMethod || !shippingQuoteReady || isProcessing}
                                 className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isProcessing ? (
@@ -204,7 +215,9 @@ export default function CheckoutPage() {
                                     </>
                                 ) : (
                                     <>
-                                        {selectedPaymentMethod === 'PIX'
+                                        {requiresShipping
+                                            ? 'Aguardando cálculo do frete'
+                                            : selectedPaymentMethod === 'PIX'
                                             ? 'Pagar com PIX'
                                             : selectedPaymentMethod === 'CREDIT_CARD'
                                                 ? 'Pagar com cartão'

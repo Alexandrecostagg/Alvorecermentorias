@@ -1,3 +1,4 @@
+import type { CartItem } from '../context/CartContext'
 import type { Product, ShippingPackage } from '../types'
 
 export const SHIPPING_ORIGIN_POSTAL_CODE = '68513675'
@@ -19,4 +20,8 @@ export function normalizeShippingPackage(shipping?: Partial<ShippingPackage>): S
     heightCm: Number(shipping?.heightCm) || 0,
     lengthCm: Number(shipping?.lengthCm) || 0,
   }
+}
+
+export function cartRequiresShipping(items: CartItem[]) {
+  return items.some(({ product }) => product.shippingRequired !== false)
 }

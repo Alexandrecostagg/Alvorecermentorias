@@ -54,6 +54,15 @@ describe('Asaas Worker', () => {
     expect(() => testables.normalizeBillingType(undefined)).toThrow('Escolha PIX ou cartão')
   })
 
+  it('impede pagamento de produto físico antes da cotação do frete', () => {
+    expect(() => testables.assertPhysicalShippingIsQuoted([{
+      product: { shippingRequired: true },
+    }])).toThrow('frete ainda precisa ser calculado')
+    expect(() => testables.assertPhysicalShippingIsQuoted([{
+      product: { shippingRequired: false },
+    }])).not.toThrow()
+  })
+
   it('migra o ID numérico de um carrinho antigo para o documento atual', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(null, { status: 404 }))

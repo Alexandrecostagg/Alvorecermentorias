@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasValidShippingPackage, normalizeShippingPackage, SHIPPING_ORIGIN_POSTAL_CODE } from '../src/lib/shipping'
+import { cartRequiresShipping, hasValidShippingPackage, normalizeShippingPackage, SHIPPING_ORIGIN_POSTAL_CODE } from '../src/lib/shipping'
 
 describe('dados de frete', () => {
   it('mantém o CEP de origem sem formatação', () => {
@@ -25,5 +25,16 @@ describe('dados de frete', () => {
       heightCm: 0,
       lengthCm: 0,
     })
+  })
+
+  it('diferencia carrinhos físicos de carrinhos digitais', () => {
+    expect(cartRequiresShipping([{
+      product: { id: '1', title: 'Livro', image: '', price: 89.9, category: 'Livros', shippingRequired: true },
+      qty: 1,
+    }])).toBe(true)
+    expect(cartRequiresShipping([{
+      product: { id: '2', title: 'Curso', image: '', price: 109.9, category: 'Cursos', shippingRequired: false },
+      qty: 1,
+    }])).toBe(false)
   })
 })

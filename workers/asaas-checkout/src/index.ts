@@ -85,6 +85,7 @@ async function createCheckout(request: Request, env: Env) {
   const user = await verifyFirebaseUser(request, env)
   const accessToken = await getGoogleAccessToken(env)
   const products = await loadProducts(items, env, accessToken)
+  assertPhysicalShippingIsQuoted(products)
   const profile = await loadUserProfile(user.uid, env, accessToken)
   const customerData = buildAsaasCustomerData(user, profile)
   const orderCustomer = buildOrderCustomer(user, profile)
@@ -339,9 +340,29 @@ async function loadProducts(items: CheckoutItemRequest[], env: Env, accessToken:
         image: typeof data.image === 'string' ? data.image : '',
         category: typeof data.category === 'string' ? data.category : 'Loja',
         description: typeof data.description === 'string' ? data.description : undefined,
+        shippingRequired: data.shippingRequired !== false,
+        shipping: normalizeShippingPackage(data.shipping),
       },
     }
   }))
+}
+
+function normalizeShippingPackage(value: unknown) {
+  const shipping = value && typeof value === 'object' ? value as Record<string, unknown> : {}
+  return {
+    weightKg: Number(shipping.weightKg) || 0,
+    widthCm: Number(shipping.widthCm) || 0,
+    heightCm: Number(shipping.heightCm) || 0,
+    lengthCm: Number(shipping.lengthCm) || 0,
+  }
+}
+
+function assertPhysicalShippingIsQuoted(
+  products: Array<{ product: { shippingRequired?: boolean } }>,
+) {
+  if (products.some(({ product }) => product.shippingRequired !== false)) {
+    throw new HttpError(409, 'O frete ainda precisa ser calculado antes do pagamento.')
+  }
 }
 
 async function resolveCatalogProduct(productId: string, env: Env, accessToken: string) {
@@ -691,6 +712,7 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 }
 
 export const testables = {
+  assertPhysicalShippingIsQuoted,
   buildAsaasCustomerData,
   buildOrderCustomer,
   extractOrderId,
