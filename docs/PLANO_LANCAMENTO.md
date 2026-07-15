@@ -190,6 +190,9 @@ Estes itens dependem de acesso ou decisão do proprietário:
 | 15/07/2026 | Política de frete | Melhor Envio definido para a loja própria; marketplaces usarão suas logísticas nativas e o cliente pagará o frete real no lançamento. | Concluído |
 | 15/07/2026 | Origem logística | CEP `68513-675`, Rua Contorno, São Félix I, Marabá/PA, definido como origem das cotações. | Concluído |
 | 15/07/2026 | Catálogo logístico | Campos de peso, largura, altura e comprimento da embalagem adicionados ao administrador sem assumir medidas fictícias. | Em andamento |
+| 15/07/2026 | Git | Preparação do catálogo para frete calculado salva no commit `71a2535` e enviada para `origin/main`. | Concluído |
+| 15/07/2026 | Deploy Worker | CEP de origem publicado na versão `2f9b8b2a-cda7-4ac0-adae-25372dc9aedc`. | Concluído |
+| 15/07/2026 | Deploy Pages | Cadastro logístico publicado no deployment `ed6b7bdf`. | Concluído |
 
 ## Regras de trabalho
 
