@@ -83,7 +83,7 @@ export default {
       }
 
       if (request.method === 'GET' && url.pathname === '/digital/download') {
-        return downloadDigitalAsset(request, env)
+        return await downloadDigitalAsset(request, env)
       }
 
       if (request.method === 'POST' && url.pathname === '/webhooks/asaas') {

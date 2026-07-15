@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { testables } from '../workers/asaas-checkout/src/index'
+import worker, { testables } from '../workers/asaas-checkout/src/index'
 
 describe('Asaas Worker', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -88,6 +88,17 @@ describe('Asaas Worker', () => {
     await expect(testables.verifyDownloadToken(`${token}x`, 'segredo-de-download')).rejects.toThrow('inválido')
     vi.spyOn(Date, 'now').mockReturnValue(now + 60_001)
     await expect(testables.verifyDownloadToken(token, 'segredo-de-download')).rejects.toThrow('expirou')
+  })
+
+  it('trata download sem token como erro controlado', async () => {
+    const response = await worker.fetch(new Request('https://worker.example/digital/download'), {
+      FIREBASE_SERVICE_ACCOUNT_JSON: '{}',
+      DOWNLOAD_TOKEN_SECRET: 'segredo-de-download',
+      DIGITAL_ASSETS: { get: vi.fn(), put: vi.fn(), delete: vi.fn() },
+    } as never)
+
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({ error: 'Link de download inválido.' })
   })
 
   it('aceita somente nomes seguros de PDF ou EPUB', () => {
