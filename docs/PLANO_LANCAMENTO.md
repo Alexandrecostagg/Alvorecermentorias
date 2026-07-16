@@ -3,6 +3,13 @@
 Atualizado em: 15 de julho de 2026
 Objetivo: colocar no ar um MVP comercial confiável no menor prazo possível.
 
+## Etapa anterior ao próximo ciclo de desenvolvimento
+
+Antes de ampliar as páginas e jornadas da plataforma, será criado um catálogo
+autoral mínimo com e-books e produtos Kids. A estratégia, as sugestões de
+produtos e o roadmap preservado estão registrados em
+[`ROADMAP_CATALOGO_E_EVOLUCAO.md`](./ROADMAP_CATALOGO_E_EVOLUCAO.md).
+
 ## Escopo do MVP
 
 O primeiro lançamento será concentrado em:
