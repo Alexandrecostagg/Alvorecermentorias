@@ -19,8 +19,9 @@
     "test:orders": "vitest run tests/orders.test.ts",
     "test:shipping": "vitest run tests/shipping.test.ts",
     "audit:catalog": "node scripts/audit-catalog.mjs",
-    "preview": "vite preview",
-    "api": "json-server --watch db.json --port 4000"
+    "preview": "npm run build && wrangler dev",
+    "api": "json-server --watch db.json --port 4000",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "firebase": "^12.16.0",
@@ -30,6 +31,7 @@
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.51.0",
     "@eslint/js": "^9.9.1",
     "@firebase/rules-unit-testing": "^5.0.1",
     "@types/react": "^18.3.5",
@@ -48,6 +50,6 @@
     "typescript-eslint": "^8.3.0",
     "vite": "^8.1.4",
     "vitest": "^4.1.10",
-    "wrangler": "^4.110.0"
+    "wrangler": "^4.119.0"
   }
 }
