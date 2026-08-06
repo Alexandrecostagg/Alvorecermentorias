@@ -4,6 +4,7 @@ import ProductDetailsModal from '../../components/modals/ProductDetailsModal'
 import ProductImage from '../../components/ui/ProductImage'
 import { useProducts } from '../../hooks/useProducts'
 import type { Product } from '../../types'
+import { ProductCardSkeleton } from '../../components/loaders/ProductCardSkeleton'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc'
 
@@ -205,7 +206,13 @@ export default function StorePage() {
               </div>
             </div>
 
-            {error ? (
+            {loading ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <ProductCardSkeleton key={n} />
+                ))}
+              </div>
+            ) : error ? (
               <div role="alert" className="text-center py-16 rounded-2xl bg-red-50 text-red-700 px-6">
                 Não foi possível carregar os produtos agora. Tente novamente em instantes.
               </div>

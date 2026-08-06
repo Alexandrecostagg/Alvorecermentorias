@@ -4,6 +4,7 @@ import { useProducts } from '../hooks/useProducts'
 import ProductDetailsModal from '../components/modals/ProductDetailsModal'
 import ProductImage from '../components/ui/ProductImage'
 import type { Product } from '../types'
+import { ProductCardSkeleton } from '../components/loaders/ProductCardSkeleton'
 
 const ageRanges = ['0-2', '3-5', '6-8', '9-12'] as const
 const categories = ['Livros', 'Brincar & Aprender', 'Louvor', 'Decoração'] as const
@@ -25,14 +26,6 @@ export default function Kids() {
         (q ? p.title.toLowerCase().includes(q.toLowerCase()) : true)
     )
   }, [kidsData, q, age, cat])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-[#E6F3FF]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400"></div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-[#E6F3FF] relative overflow-hidden font-sans">
@@ -117,7 +110,13 @@ export default function Kids() {
 
         {/* Products Grid */}
         <div className="max-w-6xl mx-auto mt-8 relative z-10">
-          {list.length === 0 ? (
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <ProductCardSkeleton key={n} />
+              ))}
+            </div>
+          ) : list.length === 0 ? (
             <div className="text-center py-20 bg-white/10 rounded-3xl border-4 border-dashed border-white/30 text-white font-bold text-xl">
               Ops! Não encontramos nada com esses filtros. 🌱
             </div>

@@ -4,11 +4,13 @@ import { Baby, Home as HomeIcon, Users, ShoppingBag, ShoppingCart, Info, Mail, L
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { publicMedia } from '../../lib/media'
+import { CartDrawer } from '../cart/CartDrawer'
 
 export default function Header() {
   const { user, userProfile, logout } = useAuth()
   const { totalItems } = useCart()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
   const base = 'px-3 py-2 rounded-xl text-sm font-medium hover:bg-white/70 transition-colors flex items-center'
   const cls = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${base} bg-white text-slate-900 shadow-sm` : `${base} text-slate-700`
@@ -31,14 +33,18 @@ export default function Header() {
           </nav>
 
           <div className="ml-auto md:ml-4 flex items-center border-l border-slate-200 pl-4 gap-4">
-            <Link to="/checkout" aria-label="Abrir carrinho" className="relative group p-1">
-              <ShoppingCart className="h-6 w-6 text-slate-700 group-hover:text-alvorecer-gold transition-colors" />
+            <button
+              onClick={() => setCartOpen(true)}
+              aria-label="Abrir carrinho"
+              className="relative group p-1"
+            >
+              <ShoppingCart className="h-6 w-6 text-slate-700 group-hover:text-[#F4C048] transition-colors" />
               {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
                   {totalItems}
                 </span>
               )}
-            </Link>
+            </button>
 
             {user ? (
               <div className="hidden md:flex items-center gap-4">
@@ -113,6 +119,8 @@ export default function Header() {
           </nav>
         )}
       </div>
+
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </header>
   )
 }
