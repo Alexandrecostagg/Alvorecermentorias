@@ -1,5 +1,6 @@
 import { ArrowRight, BookOpen, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { ShinyText } from '../ui/animations/ShinyText'
 
 export default function Hero() {
   return (
@@ -28,10 +29,10 @@ export default function Hero() {
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
               to="/loja"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F4C048] px-7 py-4 font-bold text-slate-950 shadow-lg shadow-[#F4C048]/15 transition hover:-translate-y-0.5 hover:bg-[#FFD36B]"
+              className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#F4C048] px-7 py-4 font-bold text-slate-950 shadow-lg shadow-[#F4C048]/15 transition hover:-translate-y-0.5 hover:bg-[#FFD36B]"
             >
-              Explorar conteúdos
-              <ArrowRight className="h-5 w-5" />
+              <ShinyText text="Explorar conteúdos" />
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               to="/sobre"
