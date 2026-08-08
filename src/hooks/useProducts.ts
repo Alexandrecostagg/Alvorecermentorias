@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db, firebaseConfigurationMessage, isFirebaseConfigured } from '../lib/firebase';
+import { db, isFirebaseConfigured } from '../lib/firebase';
 import type { Product } from '../types';
 import { getErrorMessage } from '../lib/errors';
 
@@ -16,8 +16,40 @@ export function useProducts({ section, featured }: UseProductsOptions = {}) {
 
     useEffect(() => {
         if (!isFirebaseConfigured) {
-            setProducts([]);
-            setError(firebaseConfigurationMessage);
+            // Se o firebase não está configurado (como no preview), carregamos mock data para a loja
+            // não ficar travada girando infinitamente
+            const mockProducts: Product[] = [
+                {
+                    id: 'mock-1',
+                    title: 'Bíblia de Estudo',
+                    price: 199.90,
+                    image: 'https://images.unsplash.com/photo-1544411047-c45ba52422e5?q=80&w=600&auto=format&fit=crop',
+                    description: 'Uma bíblia para aprofundar seus estudos.',
+                    category: 'Teologia',
+                    section: 'store',
+                    featured: true,
+                    type: 'physical',
+                },
+                {
+                    id: 'mock-2',
+                    title: 'Liderança Cristã',
+                    price: 49.90,
+                    image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=600&auto=format&fit=crop',
+                    description: 'Princípios práticos de liderança.',
+                    category: 'Liderança',
+                    section: 'store',
+                    featured: false,
+                    type: 'physical',
+                }
+            ];
+
+            const filtered = mockProducts.filter(p => {
+                if (section && p.section !== section) return false;
+                if (featured && !p.featured) return false;
+                return true;
+            });
+
+            setProducts(filtered);
             setLoading(false);
             return;
         }

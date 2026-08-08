@@ -5,6 +5,7 @@ import { useProducts } from '../../hooks/useProducts'
 import type { Product } from '../../types'
 import ProductDetailsModal from '../modals/ProductDetailsModal'
 import ProductImage from '../ui/ProductImage'
+import { SpotlightCard } from '../ui/animations/SpotlightCard'
 
 const money = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -57,9 +58,10 @@ export default function FeaturedProducts() {
             {featuredProducts.map((product) => {
               const digital = isDigital(product)
               return (
-                <article key={product.id} className="group overflow-hidden rounded-3xl border border-[#E8E1D4] bg-[#FDFBF7] transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5">
-                  <button type="button" onClick={() => setSelectedProduct(product)} className="block w-full text-left" aria-label={`Ver detalhes de ${product.title}`}>
-                    <div className="relative aspect-[4/5] overflow-hidden bg-[#F1EDE4]">
+                <SpotlightCard key={product.id} className="rounded-3xl border border-[#E8E1D4] bg-[#FDFBF7]">
+                  <article className="group h-full flex flex-col">
+                    <button type="button" onClick={() => setSelectedProduct(product)} className="block w-full text-left" aria-label={`Ver detalhes de ${product.title}`}>
+                      <div className="relative aspect-[4/5] overflow-hidden bg-[#F1EDE4]">
                       <ProductImage src={product.image} alt={product.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                       <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold text-slate-800 shadow-sm backdrop-blur">
                         {digital ? <FileText className="h-3.5 w-3.5" /> : <Package className="h-3.5 w-3.5" />}
@@ -74,9 +76,10 @@ export default function FeaturedProducts() {
                         <strong className="text-lg text-slate-950">{money.format(product.price)}</strong>
                         <span className="text-sm font-bold text-slate-700 transition group-hover:text-[#A97916]">Ver detalhes</span>
                       </div>
-                    </div>
-                  </button>
-                </article>
+                      </div>
+                    </button>
+                  </article>
+                </SpotlightCard>
               )
             })}
           </div>

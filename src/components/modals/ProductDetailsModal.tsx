@@ -3,6 +3,7 @@ import { CheckCircle, ShoppingCart, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { Product } from '../../types'
 import { useCart } from '../../context/CartContext'
+import { useToast } from '../../context/ToastContext'
 import ProductImage from '../ui/ProductImage'
 
 type Props = {
@@ -17,6 +18,7 @@ const money = new Intl.NumberFormat('pt-BR', {
 
 export default function ProductDetailsModal({ product, onClose }: Props) {
   const { addItem } = useCart()
+  const { addToast } = useToast()
   const titleId = useId()
   const closeRef = useRef(onClose)
   const [added, setAdded] = useState(false)
@@ -50,6 +52,7 @@ export default function ProductDetailsModal({ product, onClose }: Props) {
     if (!inStock || added) return
     addItem(product)
     setAdded(true)
+    addToast(`${product.title} foi adicionado ao seu carrinho!`, 'success')
   }
 
   return (

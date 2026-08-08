@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react'
 import { BadgeCheck, Check, FileText, Package, PackageCheck, Search, ShieldCheck, ShoppingBag, SlidersHorizontal, X } from 'lucide-react'
 import ProductDetailsModal from '../../components/modals/ProductDetailsModal'
 import ProductImage from '../../components/ui/ProductImage'
+import { SpotlightCard } from '../../components/ui/animations/SpotlightCard'
 import { useProducts } from '../../hooks/useProducts'
 import type { Product } from '../../types'
+import { ProductCardSkeleton } from '../../components/loaders/ProductCardSkeleton'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc'
 
@@ -205,7 +207,13 @@ export default function StorePage() {
               </div>
             </div>
 
-            {error ? (
+            {loading ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <ProductCardSkeleton key={n} />
+                ))}
+              </div>
+            ) : error ? (
               <div role="alert" className="text-center py-16 rounded-2xl bg-red-50 text-red-700 px-6">
                 Não foi possível carregar os produtos agora. Tente novamente em instantes.
               </div>
@@ -233,8 +241,9 @@ function ProductCard({ product, onView }: { product: Product; onView: () => void
   const digital = isDigital(product)
 
   return (
-    <article className="group overflow-hidden rounded-2xl border border-[#Eae5d8] bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-      <div className="relative aspect-[4/5] overflow-hidden bg-[#F4F1EA]">
+    <SpotlightCard className="rounded-2xl border border-[#Eae5d8] bg-white">
+      <article className="group h-full flex flex-col">
+        <div className="relative aspect-[4/5] overflow-hidden bg-[#F4F1EA]">
         <ProductImage src={product.image} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
         {product.featured && (
           <span className="absolute top-0 left-0 bg-slate-900 text-white text-[10px] uppercase font-bold tracking-widest px-3 py-1">Destaque</span>
@@ -260,9 +269,10 @@ function ProductCard({ product, onView }: { product: Product; onView: () => void
         </div>
 
         <button type="button" onClick={onView} className="mt-5 w-full bg-slate-900 text-white py-3 rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-alvorecer-gold transition-colors">
-          Ver detalhes
-        </button>
-      </div>
-    </article>
+            Ver detalhes
+          </button>
+        </div>
+      </article>
+    </SpotlightCard>
   )
 }

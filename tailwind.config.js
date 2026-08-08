@@ -41,6 +41,15 @@ export default {
       boxShadow: {
         soft: '0 4px 12px rgba(0, 0, 0, 0.05)',
       },
+      animation: {
+        shine: 'shine 3s linear infinite',
+      },
+      keyframes: {
+        shine: {
+          '0%': { backgroundPosition: '200% center' },
+          '100%': { backgroundPosition: '-200% center' },
+        },
+      },
     },
   },
   plugins: [],

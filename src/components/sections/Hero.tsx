@@ -1,12 +1,13 @@
 import { ArrowRight, BookOpen, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { ShinyText } from '../ui/animations/ShinyText'
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-[#0B172A] text-white">
+    <section className="relative overflow-hidden bg-slate-800 text-white">
       <div className="absolute inset-0 opacity-40" aria-hidden="true">
-        <div className="absolute -left-24 top-20 h-80 w-80 rounded-full bg-[#D7A93E]/20 blur-3xl" />
-        <div className="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-[#1E3856]/80 to-transparent" />
+        <div className="absolute -left-24 top-20 h-80 w-80 rounded-full bg-alvorecer-gold/20 blur-3xl" />
+        <div className="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-slate-700/80 to-transparent" />
       </div>
 
       <div className="relative mx-auto grid min-h-[660px] max-w-7xl items-center gap-10 px-4 py-16 md:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-20">
@@ -28,10 +29,10 @@ export default function Hero() {
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
               to="/loja"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F4C048] px-7 py-4 font-bold text-slate-950 shadow-lg shadow-[#F4C048]/15 transition hover:-translate-y-0.5 hover:bg-[#FFD36B]"
+              className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#F4C048] px-7 py-4 font-bold text-slate-950 shadow-lg shadow-[#F4C048]/15 transition hover:-translate-y-0.5 hover:bg-[#FFD36B]"
             >
-              Explorar conteúdos
-              <ArrowRight className="h-5 w-5" />
+              <ShinyText text="Explorar conteúdos" />
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               to="/sobre"
