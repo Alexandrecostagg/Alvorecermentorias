@@ -21,6 +21,17 @@ import AdminRoute from '../pages/Admin/AdminRoute'
 import ProductList from '../pages/Admin/ProductList'
 import ProductForm from '../pages/Admin/ProductForm'
 import LibraryPage from '../pages/Library/LibraryPage'
+import MentoringPage from '../pages/Mentoring/MentoringPage'
+import MentoringCatalog from '../pages/Mentoring/MentoringCatalog'
+import MentorProfile from '../pages/Mentoring/MentorProfile'
+import MentoringSchedule from '../pages/Mentoring/MentoringSchedule'
+import MentoringCheckout from '../pages/Mentoring/MentoringCheckout'
+import MentoringDashboard from '../pages/Mentoring/MentoringDashboard'
+import MentoringReview from '../pages/Mentoring/MentoringReview'
+import MentoringNotifications from '../pages/Mentoring/MentoringNotifications'
+import MentoringGroupSession from '../pages/Mentoring/MentoringGroupSession'
+import MentoringAI from '../pages/Mentoring/MentoringAI'
+import MentoringSummaries from '../pages/Mentoring/MentoringSummaries'
 
 function NotFound() {
   return (
@@ -44,6 +55,73 @@ export default function App() {
             <Route path="/kids" element={<Kids />} />
             <Route path="/sobre" element={<About />} />
             <Route path="/contato" element={<Contact />} />
+            <Route path="/mentoria" element={<MentoringPage />} />
+            <Route path="/mentoria/catalogo" element={<MentoringCatalog />} />
+            <Route path="/mentoria/mentor/:id" element={<MentorProfile />} />
+            <Route
+              path="/mentoria/agendar/:id"
+              element={
+                <PrivateRoute>
+                  <MentoringSchedule />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/mentoria/checkout/:id"
+              element={
+                <PrivateRoute>
+                  <MentoringCheckout />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/mentoria/dashboard"
+              element={
+                <PrivateRoute>
+                  <MentoringDashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/mentoria/avaliar/:sessionId"
+              element={
+                <PrivateRoute>
+                  <MentoringReview />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/mentoria/notificacoes"
+              element={
+                <PrivateRoute>
+                  <MentoringNotifications />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/mentoria/grupo/:id"
+              element={
+                <PrivateRoute>
+                  <MentoringGroupSession />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/mentoria/matching"
+              element={
+                <PrivateRoute>
+                  <MentoringAI />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/mentoria/resumos"
+              element={
+                <PrivateRoute>
+                  <MentoringSummaries />
+                </PrivateRoute>
+              }
+            />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/checkout/status" element={<PaymentReturnPage />} />
 

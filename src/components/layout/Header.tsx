@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
-import { Baby, Home as HomeIcon, Users, ShoppingBag, ShoppingCart, Info, Mail, LogIn, LogOut, Package, LayoutDashboard, Menu, X, BookOpen } from 'lucide-react'
+import { Baby, Home as HomeIcon, Users, ShoppingBag, ShoppingCart, Info, Mail, LogIn, LogOut, Package, LayoutDashboard, Menu, X, BookOpen, GraduationCap } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { publicMedia } from '../../lib/media'
@@ -26,6 +26,7 @@ export default function Header() {
             <NavLink to="/" className={cls}><HomeIcon className="h-4 w-4 mr-2" />Home</NavLink>
             <NavLink to="/loja" className={cls}><ShoppingBag className="h-4 w-4 mr-2" />Loja</NavLink>
             <NavLink to="/kids" className={cls}><Baby className="h-4 w-4 mr-2" />Kids</NavLink>
+            <NavLink to="/mentoria" className={cls}><GraduationCap className="h-4 w-4 mr-2" />Mentoria</NavLink>
             <NavLink to="/sobre" className={cls}><Info className="h-4 w-4 mr-2" />Sobre</NavLink>
             <NavLink to="/contato" className={cls}><Mail className="h-4 w-4 mr-2" />Contato</NavLink>
           </nav>
@@ -87,6 +88,7 @@ export default function Header() {
             <NavLink onClick={() => setMobileOpen(false)} to="/" className={cls}><HomeIcon className="h-4 w-4 mr-2" />Home</NavLink>
             <NavLink onClick={() => setMobileOpen(false)} to="/loja" className={cls}><ShoppingBag className="h-4 w-4 mr-2" />Loja</NavLink>
             <NavLink onClick={() => setMobileOpen(false)} to="/kids" className={cls}><Baby className="h-4 w-4 mr-2" />Kids</NavLink>
+            <NavLink onClick={() => setMobileOpen(false)} to="/mentoria" className={cls}><GraduationCap className="h-4 w-4 mr-2" />Mentoria</NavLink>
             <NavLink onClick={() => setMobileOpen(false)} to="/sobre" className={cls}><Info className="h-4 w-4 mr-2" />Sobre</NavLink>
             <NavLink onClick={() => setMobileOpen(false)} to="/contato" className={cls}><Mail className="h-4 w-4 mr-2" />Contato</NavLink>
 
