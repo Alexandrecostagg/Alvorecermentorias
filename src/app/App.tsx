@@ -20,6 +20,7 @@ import AdminLayout from '../layouts/AdminLayout'
 import AdminRoute from '../pages/Admin/AdminRoute'
 import ProductList from '../pages/Admin/ProductList'
 import ProductForm from '../pages/Admin/ProductForm'
+import AdminMentoring from '../pages/Admin/AdminMentoring'
 import LibraryPage from '../pages/Library/LibraryPage'
 import MentoringPage from '../pages/Mentoring/MentoringPage'
 import MentoringCatalog from '../pages/Mentoring/MentoringCatalog'
@@ -145,6 +146,7 @@ export default function App() {
               <Route path="products" element={<ProductList />} />
               <Route path="products/new" element={<ProductForm />} />
               <Route path="products/:id" element={<ProductForm />} />
+              <Route path="mentoring" element={<AdminMentoring />} />
             </Route>
 
             <Route
