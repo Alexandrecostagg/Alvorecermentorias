@@ -3,6 +3,10 @@
 Plataforma comercial da Alvorecer para venda de livros, recursos cristãos e
 produtos da linha Kids.
 
+A retomada do projeto e a sequência de implementação da mentoria estão em
+[`docs/PLANO_RETOMADA.md`](docs/PLANO_RETOMADA.md). As telas atuais de mentoria
+ainda usam dados demonstrativos; não representam uma operação concluída.
+
 ## Arquitetura
 
 - React, TypeScript e Vite no frontend;
@@ -40,6 +44,31 @@ VITE_PAYMENT_API_BASE_URL=
 
 O frontend não usa Firebase Storage. `VITE_PUBLIC_MEDIA_BASE_URL` deve apontar
 para a origem pública do bucket R2.
+
+### Build e configuração do Cloudflare Pages
+
+`npm run build` exige as sete variáveis acima e recusa a configuração Firebase
+de demonstração. O servidor `npm run dev` continua podendo abrir sem configuração,
+mas login e catálogo ficam indisponíveis até que ela seja preenchida.
+
+O Vite incorpora essas variáveis durante o build. Configurar `.env.local` nesta
+máquina não configura o build remoto: no Cloudflare Pages, preencha as mesmas
+variáveis públicas no ambiente correspondente (Production ou Preview) e execute
+um novo build. Use Node 22.12 ou superior, comando `npm run build` e saída `dist`.
+
+Se o deploy for feito enviando `dist` pelo terminal, as variáveis precisam existir
+na máquina que gera esse diretório. Alterá-las depois de compilar não modifica
+os arquivos já publicados.
+
+A configuração web pública pode ser consultada pela conta autorizada:
+
+```bash
+firebase apps:list WEB --project alvorecermentorias
+firebase apps:sdkconfig WEB 1:23903019061:web:793c293a1e0dee0dee517c --project alvorecermentorias
+```
+
+Nunca use tokens Asaas, credenciais de conta de serviço ou chaves privadas em
+variáveis `VITE_*`. `.env.local` é ignorado pelo Git.
 
 ## Comandos
 

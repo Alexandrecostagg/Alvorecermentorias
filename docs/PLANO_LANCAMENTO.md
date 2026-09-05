@@ -1,5 +1,9 @@
 # Plano de lançamento — Alvorecer Mentorias
 
+> Retomada em 04/09/2026: a sequência técnica atual está em
+> [PLANO_RETOMADA.md](./PLANO_RETOMADA.md). O registro abaixo preserva o histórico
+> de julho e não representa a conclusão da nova área de mentoria.
+
 Atualizado em: 15 de julho de 2026
 Objetivo: colocar no ar um MVP comercial confiável no menor prazo possível.
 
