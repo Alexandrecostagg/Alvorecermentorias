@@ -5,7 +5,7 @@ export default {
     extend: {
       colors: {
         alvorecer: {
-          gold: '#F4C048', // primária (texto apenas sobre navy)
+          gold: '#F4C048', // primária (texto apenas sobre fundos escuros)
           cream: '#FFF1DB', // fundo
           brown: '#8C6A2F', // accent / texto acessível sobre claro
           ink: '#0B172A', // navy profundo — fundos escuros
@@ -45,7 +45,7 @@ export default {
         },
         path: {
           green: { bg: '#E8F0EC', fg: '#2F6650' },
-          amber: { bg: '#F8ECD0', fg: '#9A6B0B' },
+          amber: { bg: '#F8ECD0', fg: '#8A5E08' },
           blue: { bg: '#E8EFF8', fg: '#315E91' },
           clay: { bg: '#F5E8E2', fg: '#9B513B' },
         },
