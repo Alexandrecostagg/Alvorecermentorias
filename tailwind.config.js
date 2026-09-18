@@ -5,9 +5,19 @@ export default {
     extend: {
       colors: {
         alvorecer: {
-          gold: '#F4C048', // primária
+          gold: '#F4C048', // primária (texto apenas sobre navy)
           cream: '#FFF1DB', // fundo
-          brown: '#8C6A2F', // accent
+          brown: '#8C6A2F', // accent / texto acessível sobre claro
+          ink: '#0B172A', // navy profundo — fundos escuros
+          deep: '#091321', // navy mais profundo — gradientes
+          navy: '#1E3856', // navy de apoio — gradientes
+          'gold-light': '#F6CF72', // texto dourado sobre navy
+          'gold-hover': '#FFD36B', // hover do CTA dourado
+          'brown-deep': '#7A5410', // texto dourado acessível sobre claro
+          surface: '#FDFBF7', // fundo de card
+          canvas: '#F8F5EE', // fundo de seção clara
+          line: '#E8E1D4', // bordas suaves
+          'image-bg': '#F1EDE4', // fundo de imagem
         },
         brand: {
           50: '#eef2ff',
@@ -32,6 +42,12 @@ export default {
           700: '#be123c',
           800: '#9f1239',
           900: '#881337',
+        },
+        path: {
+          green: { bg: '#E8F0EC', fg: '#2F6650' },
+          amber: { bg: '#F8ECD0', fg: '#9A6B0B' },
+          blue: { bg: '#E8EFF8', fg: '#315E91' },
+          clay: { bg: '#F5E8E2', fg: '#9B513B' },
         },
       },
       borderRadius: {
