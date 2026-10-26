@@ -1,142 +1,68 @@
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Star, Clock, ChevronRight, Calendar, BookOpen, CheckCircle2, ArrowRight, MessageCircle } from 'lucide-react'
-import { TRILHA_LABELS, TRILHA_ICONS, type Mentor, type MentoringReview } from '../../types/mentoring'
-
-const MENTORES_MOCK: Record<string, Mentor> = {
-  '1': {
-    id: '1',
-    name: 'Pr. Alexandre Gosta',
-    photo: '/alexandre-gomes-costa.jpg',
-    bio: 'Pastor e mentor com mais de 15 anos de experiência em liderança ministerial e desenvolvimento de pessoas. Especialista em propósito de vida e liderança cristã. Já acompanhou mais de 120 pessoas em processos de mentoria individual e grupo.',
-    specialty: 'Liderança e Propósito',
-    trilhas: ['lideranca', 'espiritual'],
-    rating: 4.9,
-    reviewCount: 95,
-    sessionCount: 120,
-    available: true,
-    createdAt: '2026-01-15',
-  },
-  '2': {
-    id: '2',
-    name: 'Ana Beatriz Santos',
-    photo: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Psicóloga e mentora familiar. Auxilia casais e famílias a fortalecerem vínculos com base em princípios bíblicos de amor e comunicação. Mais de 95 sessões realizadas com casais em diferentes estágios do relacionamento.',
-    specialty: 'Família e Casamento',
-    trilhas: ['familia', 'kids'],
-    rating: 4.8,
-    reviewCount: 78,
-    sessionCount: 95,
-    available: true,
-    createdAt: '2026-02-01',
-  },
-  '3': {
-    id: '3',
-    name: 'Carlos Eduardo Lima',
-    photo: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Empresário e consultor financeiro. Transforma a relação das pessoas com o dinheiro através de princípios bíblicos de administração e generosidade. Especialista em planejamento financeiro familiar e eliminação de dívidas.',
-    specialty: 'Finanças e Generosidade',
-    trilhas: ['financas', 'lideranca'],
-    rating: 4.9,
-    reviewCount: 62,
-    sessionCount: 80,
-    available: true,
-    createdAt: '2026-01-20',
-  },
-  '4': {
-    id: '4',
-    name: 'Maria Clara Oliveira',
-    photo: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Coach certificada e mentora de vida espiritual. Acompanha pessoas em processos de crescimento pessoal e espiritual com profundidade e acolhimento. Foco em formação de hábitos devocionais e vida de oração.',
-    specialty: 'Vida Espiritual',
-    trilhas: ['espiritual', 'familia'],
-    rating: 4.7,
-    reviewCount: 54,
-    sessionCount: 70,
-    available: true,
-    createdAt: '2026-03-01',
-  },
-  '5': {
-    id: '5',
-    name: 'João Pedro Mendes',
-    photo: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Líder juvenil e mentor de jovens adultos. Especialista em ajudar jovens a encontrarem propósito e direção para a vida. Metodologia prática que combina teologia, autoconhecimento e ação.',
-    specialty: 'Propósito e Juventude',
-    trilhas: ['lideranca', 'espiritual'],
-    rating: 4.8,
-    reviewCount: 41,
-    sessionCount: 55,
-    available: true,
-    createdAt: '2026-02-15',
-  },
-  '6': {
-    id: '6',
-    name: 'Fernanda Costa',
-    photo: 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Especialista em educação cristã infantil. Desenvolve metodologias para ensinar fé de forma prática e envolvente para crianças. Autora de materiais devocionais para famílias com filhos pequenos.',
-    specialty: 'Alvorecer Kids',
-    trilhas: ['kids', 'familia'],
-    rating: 4.9,
-    reviewCount: 38,
-    sessionCount: 60,
-    available: true,
-    createdAt: '2026-03-10',
-  },
-}
-
-const REVIEWS_MOCK: MentoringReview[] = [
-  {
-    id: '1',
-    sessionId: 's1',
-    mentorId: '1',
-    menteeId: 'u1',
-    menteeName: 'Marcos S.',
-    rating: 5,
-    comment: 'O Pr. Alexandre tem uma capacidade incrível de conectar a Palavra com a vida prática. Em poucas sessões, minha visão de liderança mudou completamente.',
-    createdAt: '2026-08-15',
-  },
-  {
-    id: '2',
-    sessionId: 's2',
-    mentorId: '1',
-    menteeId: 'u2',
-    menteeName: 'Pedro H.',
-    rating: 5,
-    comment: 'Excelente mentor. Muito atencioso, pontual e com conteúdo de qualidade. Recomendo para quem busca crescimento espiritual e profissional.',
-    createdAt: '2026-08-10',
-  },
-  {
-    id: '3',
-    sessionId: 's3',
-    mentorId: '1',
-    menteeId: 'u3',
-    menteeName: 'Ana L.',
-    rating: 4,
-    comment: 'Muito boa a experiência. O mentor é preparado e dedicado. Só não dou 5 estrelas porque queria mais材料 de apoio entre as sessões.',
-    createdAt: '2026-07-28',
-  },
-]
-
-const HORARIOS_DISPONIVEIS = [
-  'Segunda 19:00',
-  'Terça 14:00',
-  'Quarta 19:00',
-  'Quinta 10:00',
-  'Sexta 14:00',
-  'Sábado 09:00',
-]
+import {
+  Star,
+  Calendar,
+  BookOpen,
+  ChevronRight,
+  ShieldCheck,
+  CheckCircle,
+  Loader2,
+  ArrowRight,
+} from 'lucide-react'
+import {
+  type Mentor,
+  type MentoringProgram,
+  TRILHA_LABELS,
+  TRILHA_ICONS,
+} from '../../types/mentoring'
+import { getMentorById, getPrograms } from '../../services/mentoring'
 
 export default function MentorProfile() {
   const { id } = useParams<{ id: string }>()
-  const mentor = MENTORES_MOCK[id || '']
-  const reviews = REVIEWS_MOCK.filter((r) => r.mentorId === id)
+  const [mentor, setMentor] = useState<Mentor | null>(null)
+  const [programs, setPrograms] = useState<MentoringProgram[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function carregar() {
+      if (!id) return
+      try {
+        setLoading(true)
+        const [mentorData, programsData] = await Promise.all([
+          getMentorById(id),
+          getPrograms(true, id),
+        ])
+        setMentor(mentorData)
+        setPrograms(programsData)
+      } catch (err) {
+        console.error('Erro ao carregar dados do mentor:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    carregar()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 p-8 text-slate-500">
+        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+        <p className="text-sm font-medium">Carregando perfil do mentor...</p>
+      </div>
+    )
+  }
 
   if (!mentor) {
     return (
-      <div className="min-h-[60vh] grid place-items-center p-8 text-center">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Mentor não encontrado</h1>
-          <p className="text-slate-500 mb-6">O mentor que você procura não existe ou não está disponível.</p>
-          <Link to="/mentoria/catalogo" className="text-alvorecer-gold font-semibold hover:underline">
+      <div className="min-h-[60vh] grid place-items-center p-8 text-center bg-slate-50">
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 max-w-md shadow-sm">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Mentor não encontrado</h1>
+          <p className="text-slate-500 mb-6 text-sm">O mentor solicitado não existe ou não está disponível para atendimento no momento.</p>
+          <Link
+            to="/mentoria/catalogo"
+            className="inline-block bg-amber-500 text-slate-950 font-bold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-all text-sm"
+          >
             Voltar ao catálogo
           </Link>
         </div>
@@ -150,9 +76,13 @@ export default function MentorProfile() {
       <div className="bg-white border-b border-slate-200">
         <div className="mx-auto max-w-6xl px-4 py-4">
           <nav className="flex items-center gap-2 text-sm text-slate-500">
-            <Link to="/mentoria" className="hover:text-alvorecer-gold transition-colors">Mentoria</Link>
+            <Link to="/mentoria" className="hover:text-amber-600 transition-colors">
+              Mentoria
+            </Link>
             <ChevronRight className="h-4 w-4" />
-            <Link to="/mentoria/catalogo" className="hover:text-alvorecer-gold transition-colors">Catálogo</Link>
+            <Link to="/mentoria/catalogo" className="hover:text-amber-600 transition-colors">
+              Catálogo
+            </Link>
             <ChevronRight className="h-4 w-4" />
             <span className="text-slate-900 font-medium">{mentor.name}</span>
           </nav>
@@ -160,17 +90,17 @@ export default function MentorProfile() {
       </div>
 
       {/* Profile Header */}
-      <section className="bg-white">
+      <section className="bg-white border-b border-slate-200">
         <div className="mx-auto max-w-6xl px-4 py-12">
           <div className="grid lg:grid-cols-3 gap-12">
             {/* Photo & Quick Info */}
             <div className="lg:col-span-1">
               <div className="sticky top-24">
-                <div className="card overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                   <img
-                    src={mentor.photo}
+                    src={mentor.photo || '/alexandre-gomes-costa.jpg'}
                     alt={mentor.name}
-                    className="w-full aspect-square object-cover"
+                    className="w-full aspect-square object-cover bg-slate-100"
                   />
                   <div className="p-6">
                     <div className="flex items-center gap-2 mb-2">
@@ -178,35 +108,44 @@ export default function MentorProfile() {
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`h-4 w-4 ${i < Math.floor(mentor.rating) ? 'text-alvorecer-gold fill-current' : 'text-slate-200'}`}
+                            className={`h-4 w-4 ${
+                              i < Math.floor(mentor.rating ?? 5.0)
+                                ? 'text-amber-500 fill-current'
+                                : 'text-slate-200'
+                            }`}
                           />
                         ))}
                       </div>
-                      <span className="text-sm text-slate-500">{mentor.rating} ({mentor.reviewCount})</span>
+                      <span className="text-sm text-slate-500 font-medium">
+                        {mentor.rating ?? 5.0} ({mentor.reviewCount ?? 0} avaliações)
+                      </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="flex flex-wrap gap-1.5 mb-4">
                       {mentor.trilhas.map((t) => (
-                        <span key={t} className="px-2 py-1 bg-alvorecer-gold/10 text-alvorecer-gold text-xs font-medium rounded-lg">
+                        <span
+                          key={t}
+                          className="px-2 py-1 bg-amber-50 text-amber-800 text-xs font-semibold rounded-lg border border-amber-200/50"
+                        >
                           {TRILHA_ICONS[t]} {TRILHA_LABELS[t]}
                         </span>
                       ))}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-6 text-center">
-                      <div className="bg-slate-50 rounded-xl p-3">
-                        <div className="text-2xl font-bold text-slate-900">{mentor.sessionCount}</div>
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                        <div className="text-2xl font-bold text-slate-900">{mentor.sessionCount ?? 0}</div>
                         <div className="text-xs text-slate-500">Sessões</div>
                       </div>
-                      <div className="bg-slate-50 rounded-xl p-3">
-                        <div className="text-2xl font-bold text-slate-900">{mentor.reviewCount}</div>
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                        <div className="text-2xl font-bold text-slate-900">{mentor.reviewCount ?? 0}</div>
                         <div className="text-xs text-slate-500">Avaliações</div>
                       </div>
                     </div>
 
                     <Link
                       to={`/mentoria/agendar/${mentor.id}`}
-                      className="w-full bg-alvorecer-gold text-slate-900 py-3 rounded-xl font-bold text-center block hover:bg-alvorecer-gold/90 transition-all flex items-center justify-center gap-2"
+                      className="w-full bg-amber-500 text-slate-950 py-3 rounded-xl font-bold text-center block hover:bg-amber-400 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
                       <Calendar className="h-5 w-5" /> Agendar Sessão
                     </Link>
@@ -218,112 +157,74 @@ export default function MentorProfile() {
             {/* Details */}
             <div className="lg:col-span-2 space-y-8">
               <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold bg-green-100 text-green-800 px-2.5 py-1 rounded-full">
+                    <ShieldCheck className="h-3.5 w-3.5" /> Mentor Oficial Verificado
+                  </span>
+                </div>
                 <h1 className="text-3xl font-bold text-slate-900 mb-2">{mentor.name}</h1>
-                <p className="text-lg text-alvorecer-gold font-medium mb-4">{mentor.specialty}</p>
-                <p className="text-slate-600 leading-relaxed">{mentor.bio}</p>
+                <p className="text-lg text-amber-700 font-semibold mb-4">{mentor.specialty}</p>
+                <p className="text-slate-600 leading-relaxed text-base whitespace-pre-line">{mentor.bio}</p>
               </div>
 
               {/* Trilhas */}
-              <div className="card p-6">
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                 <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-alvorecer-gold" />
+                  <BookOpen className="h-5 w-5 text-amber-600" />
                   Trilhas de Mentoria
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {mentor.trilhas.map((t) => (
-                    <div key={t} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                    <div key={t} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
                       <span className="text-2xl">{TRILHA_ICONS[t]}</span>
                       <div>
                         <div className="font-semibold text-slate-900 text-sm">{TRILHA_LABELS[t]}</div>
-                        <div className="text-xs text-slate-500">8 sessões • 50 min cada</div>
+                        <div className="text-xs text-slate-500">Encontros individuais • 50 min cada</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Horários */}
-              <div className="card p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-alvorecer-gold" />
-                  Horários Disponíveis
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {HORARIOS_DISPONIVEIS.map((horario) => (
-                    <button
-                      key={horario}
-                      className="p-3 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-alvorecer-gold hover:bg-alvorecer-gold/5 transition-all text-left"
-                    >
-                      <Calendar className="h-4 w-4 text-alvorecer-gold mb-1" />
-                      {horario}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-slate-400 mt-3">Horários sujeitos a disponibilidade. Confirme no agendamento.</p>
-              </div>
-
-              {/* Como funciona */}
-              <div className="card p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-alvorecer-gold" />
-                  Como Funciona
-                </h2>
-                <div className="space-y-4">
-                  {[
-                    { step: 1, text: 'Escolha o horário e confirme o agendamento' },
-                    { step: 2, text: 'Receba a confirmação por e-mail com o link da videochamada' },
-                    { step: 3, text: 'Participe da sessão (50 minutos)' },
-                    { step: 4, text: 'Avalie a sessão e acompanhe seu progresso' },
-                  ].map((item) => (
-                    <div key={item.step} className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-alvorecer-gold/10 rounded-full flex items-center justify-center shrink-0">
-                        <span className="text-sm font-bold text-alvorecer-gold">{item.step}</span>
-                      </div>
-                      <p className="text-slate-600 text-sm pt-1">{item.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Reviews */}
-              <div className="card p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5 text-alvorecer-gold" />
-                  Avaliações ({mentor.reviewCount})
-                </h2>
-                <div className="space-y-4">
-                  {reviews.length > 0 ? (
-                    reviews.map((review) => (
-                      <div key={review.id} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-semibold text-slate-900 text-sm">{review.menteeName}</span>
-                          <div className="flex items-center gap-1">
-                            {[...Array(review.rating)].map((_, i) => (
-                              <Star key={i} className="h-3 w-3 text-alvorecer-gold fill-current" />
-                            ))}
+              {/* Programas Estruturados */}
+              {programs.length > 0 && (
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                  <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-amber-600" />
+                    Programas Estruturados
+                  </h2>
+                  <div className="space-y-4">
+                    {programs.map((prog) => (
+                      <div
+                        key={prog.id}
+                        className="p-5 border border-slate-200 rounded-xl hover:border-amber-400 transition-all bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                              {TRILHA_LABELS[prog.trilha]}
+                            </span>
+                            <span className="text-xs text-slate-500">{prog.duration}</span>
                           </div>
+                          <h3 className="font-bold text-slate-900 text-base">{prog.title}</h3>
+                          <p className="text-slate-600 text-sm mt-1">{prog.description}</p>
                         </div>
-                        <p className="text-slate-600 text-sm leading-relaxed">{review.comment}</p>
-                        <p className="text-xs text-slate-400 mt-2">{new Date(review.createdAt).toLocaleDateString('pt-BR')}</p>
+                        <div className="sm:text-right shrink-0">
+                          <div className="text-lg font-extrabold text-slate-900">
+                            R$ {prog.price.toFixed(2)}
+                          </div>
+                          <Link
+                            to={`/mentoria/checkout/${mentor.id}?programId=${prog.id}`}
+                            className="inline-flex items-center gap-1.5 mt-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all"
+                          >
+                            Matricular-se <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </div>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-slate-500 text-sm">Nenhuma avaliação ainda.</p>
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* CTA */}
-              <div className="bg-slate-900 rounded-2xl p-8 text-center text-white">
-                <h3 className="text-xl font-bold mb-2">Pronto para começar?</h3>
-                <p className="text-slate-300 mb-6">Agende sua primeira sessão com {mentor.name} e dê o primeiro passo na sua jornada.</p>
-                <Link
-                  to={`/mentoria/agendar/${mentor.id}`}
-                  className="bg-alvorecer-gold text-slate-900 px-8 py-3 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-alvorecer-gold/90 transition-all"
-                >
-                  Agendar Agora <ArrowRight className="h-5 w-5" />
-                </Link>
-              </div>
+              )}
             </div>
           </div>
         </div>

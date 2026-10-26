@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { generateKeyPairSync } from 'node:crypto'
 import worker, { testables } from '../workers/asaas-checkout/src/index'
 
 describe('Asaas Worker', () => {
@@ -99,11 +100,123 @@ describe('Asaas Worker', () => {
 
     expect(response.status).toBe(401)
     await expect(response.json()).resolves.toEqual({ error: 'Link de download inválido.' })
+    expect(response.headers.get('Cache-Control')).toContain('no-store')
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff')
+  })
+
+  it('limita CORS à origem configurada', async () => {
+    const env = { APP_ORIGIN: 'https://app.example.test' } as never
+    const allowed = await worker.fetch(new Request('https://worker.example.test/checkout', {
+      method: 'OPTIONS', headers: { Origin: 'https://app.example.test' },
+    }), env)
+    expect(allowed.status).toBe(204)
+    expect(allowed.headers.get('Access-Control-Allow-Origin')).toBe('https://app.example.test')
+    const denied = await worker.fetch(new Request('https://worker.example.test/checkout', {
+      method: 'OPTIONS', headers: { Origin: 'https://other.example.test' },
+    }), env)
+    expect(denied.status).toBe(403)
+    expect(denied.headers.get('Access-Control-Allow-Origin')).toBeNull()
   })
 
   it('aceita somente nomes seguros de PDF ou EPUB', () => {
     expect(testables.sanitizeDigitalFileName('Meu E-book Fé.pdf')).toBe('Meu-E-book-Fe.pdf')
     expect(() => testables.sanitizeDigitalFileName('../../arquivo.exe')).toThrow('PDF ou EPUB')
+  })
+
+  it('confere a assinatura real do arquivo digital antes do upload', async () => {
+    await expect(testables.assertDigitalFileSignature(
+      new File(['<script>teste</script>'], 'falso.pdf', { type: 'application/pdf' }),
+      'application/pdf',
+    )).rejects.toThrow('assinatura PDF')
+    await expect(testables.assertDigitalFileSignature(
+      new File(['%PDF-1.7\nconteúdo fictício'], 'teste.pdf', { type: 'application/pdf' }),
+      'application/pdf',
+    )).resolves.toBeUndefined()
+  })
+
+  it('rejeita programa de outro mentor, rascunho ou preço inválido', () => {
+    const valid = { status: 'published', mentorId: 'mentor-1', price: 599 }
+    expect(() => testables.assertBookableMentoringProgram(valid, 'mentor-1')).not.toThrow()
+    expect(() => testables.assertBookableMentoringProgram({ ...valid, mentorId: 'mentor-2' }, 'mentor-1')).toThrow('não está disponível')
+    expect(() => testables.assertBookableMentoringProgram({ ...valid, status: 'draft' }, 'mentor-1')).toThrow('não está disponível')
+    expect(() => testables.assertBookableMentoringProgram({ ...valid, price: -1 }, 'mentor-1')).toThrow('não está disponível')
+  })
+
+  it('recusa horários inválidos ou passados para mentoria', () => {
+    expect(() => testables.assertValidMentoringSlot('2030-02-30', '10:00')).toThrow('data válida')
+    expect(() => testables.assertValidMentoringSlot('2030-03-01', '25:00')).toThrow('data e um horário válidos')
+    expect(() => testables.assertValidMentoringSlot('2020-01-01', '10:00')).toThrow('futuros')
+    expect(() => testables.assertValidMentoringSlot('2030-03-01', '21:30')).not.toThrow()
+  })
+
+  it('mantém sessão paga ou concluída diante de evento tardio de cancelamento', () => {
+    const cancelled = { orderStatus: 'cancelled' as const, checkoutStatus: 'CANCELED' as const }
+    expect(testables.resolveMentoringStatusAfterPaymentEvent('scheduled', cancelled)).toBe('scheduled')
+    expect(testables.resolveMentoringStatusAfterPaymentEvent('completed', cancelled)).toBe('completed')
+    expect(testables.resolveMentoringStatusAfterPaymentEvent('pending_payment', cancelled)).toBe('cancelled')
+  })
+
+  it('registra o evento fictício antes de processar o webhook e ignora repetição', async () => {
+    const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const serviceAccount = {
+      client_email: 'worker@example.test',
+      private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
+      token_uri: 'https://oauth.example.test/token',
+    }
+    let eventCreated = false
+    let eventProcessed = false
+    let sessionUpdated = false
+    let slotConfirmed = false
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === serviceAccount.token_uri) return Response.json({ access_token: 'token-ficticio', expires_in: 3600 })
+      if (url.includes('/documents/paymentEvents?documentId=evt-test')) {
+        if (eventCreated) return new Response(null, { status: 409 })
+        eventCreated = true
+        return Response.json({})
+      }
+      if (url.includes('/documents/paymentEvents/evt-test') && init?.method === 'PATCH') {
+        if (!eventCreated) return new Response(null, { status: 404 })
+        eventProcessed = true
+        return Response.json({})
+      }
+      if (url.endsWith('/documents/paymentEvents/evt-test')) {
+        return Response.json({ fields: { processed: { booleanValue: eventProcessed } } })
+      }
+      if (url.endsWith('/documents/mentoringSessions/sess_test')) {
+        return Response.json({ updateTime: '2026-10-26T12:00:00Z', fields: {
+          status: { stringValue: 'pending_payment' }, slotId: { stringValue: 'slot-test' },
+        } })
+      }
+      if (url.endsWith('/documents:commit')) {
+        const write = JSON.parse(String(init?.body)).writes[0]
+        if (String(write.update.name).endsWith('/mentoringSlots/slot-test')) slotConfirmed = true
+        if (String(write.update.name).endsWith('/mentoringSessions/sess_test')) sessionUpdated = true
+        return Response.json({})
+      }
+      if (url.endsWith('/documents/mentoringSlots/slot-test')) {
+        return Response.json({ updateTime: '2026-10-26T12:00:00Z', fields: {
+          sessionId: { stringValue: 'sess_test' }, status: { stringValue: slotConfirmed ? 'confirmed' : 'held' },
+        } })
+      }
+      throw new Error(`Requisição externa inesperada: ${url}`)
+    })
+    const env = {
+      FIREBASE_SERVICE_ACCOUNT_JSON: JSON.stringify(serviceAccount),
+      FIREBASE_PROJECT_ID: 'project-test', ASAAS_WEBHOOK_TOKEN: 'token-webhook-ficticio',
+    } as never
+    const request = () => new Request('https://worker.example.test/webhooks/asaas', {
+      method: 'POST', headers: { 'asaas-access-token': 'token-webhook-ficticio' },
+      body: JSON.stringify({ id: 'evt-test', event: 'CHECKOUT_PAID', externalReference: 'sess_test' }),
+    })
+
+    const first = await worker.fetch(request(), env)
+    expect(first.status).toBe(200)
+    expect(sessionUpdated).toBe(true)
+    expect(eventProcessed).toBe(true)
+    const second = await worker.fetch(request(), env)
+    await expect(second.json()).resolves.toMatchObject({ duplicate: true })
+    expect(fetchMock.mock.calls.some(([input]) => String(input).endsWith('/documents:commit'))).toBe(true)
   })
 
   it('migra o ID numérico de um carrinho antigo para o documento atual', async () => {
@@ -316,5 +429,11 @@ describe('Asaas Worker', () => {
 
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body)) as Record<string, unknown>
     expect(body).not.toHaveProperty('customerData')
+  })
+
+  it('extrai referência de sessão de mentoria (sess_) em webhook do Asaas', () => {
+    expect(testables.extractOrderId({ externalReference: 'sess_12345' })).toBe('sess_12345')
+    expect(testables.extractOrderId({ checkout: { externalReference: 'sess_99999' } })).toBe('sess_99999')
+    expect(testables.extractOrderId({ payment: { externalReference: 'sess_abcdef' } })).toBe('sess_abcdef')
   })
 })

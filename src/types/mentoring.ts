@@ -16,6 +16,7 @@ export type Mentor = {
   reviewCount: number
   sessionCount: number
   available: boolean
+  status?: 'draft' | 'published' | 'archived'
   createdAt: string
 }
 
@@ -27,7 +28,7 @@ export type MentoringSession = {
   date: string
   duration: number
   format: '1:1' | 'group' | 'circle'
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no-show'
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no-show' | 'pending_payment' | 'payment_review'
   meetingUrl?: string
   notes?: string
   createdAt: string
@@ -210,6 +211,7 @@ export type MentoringProgram = {
   targetAudience: string
   prerequisites: string[]
   highlights: string[]
+  status?: 'draft' | 'published' | 'archived'
 }
 
 export const ALEXANDRE_PROGRAMS: MentoringProgram[] = [

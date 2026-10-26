@@ -12,6 +12,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  serverTimestamp,
   setDoc,
   updateDoc,
 } from 'firebase/firestore'
@@ -139,13 +140,16 @@ describe('pedidos', () => {
     await assertFails(getDoc(doc(anotherUser, 'orders/order-1')))
   })
 
-  it('permite administrador ler e atualizar pedidos', async () => {
+  it('permite administrador ler e avançar a operação, sem forjar pagamento', async () => {
     await seed('users/admin-1', baseUser('admin-1', 'admin'))
     await seed('orders/order-1', order)
     const admin = testEnv.authenticatedContext('admin-1').firestore()
 
     await assertSucceeds(getDoc(doc(admin, 'orders/order-1')))
-    await assertSucceeds(updateDoc(doc(admin, 'orders/order-1'), { status: 'paid' }))
+    await assertFails(updateDoc(doc(admin, 'orders/order-1'), { status: 'paid' }))
+    await assertFails(updateDoc(doc(admin, 'orders/order-1'), { paymentStatus: 'CHECKOUT_PAID' }))
+    await seed('orders/paid-order', { ...order, status: 'paid' })
+    await assertSucceeds(updateDoc(doc(admin, 'orders/paid-order'), { status: 'processing', updatedAt: '2026-10-26T12:00:00Z' }))
   })
 })
 
@@ -167,5 +171,135 @@ describe('negação padrão', () => {
     await assertFails(getDoc(doc(owner, 'digitalAssets/product-1')))
     await assertFails(getDoc(doc(owner, 'digitalEntitlements/order-1_product-1')))
     await assertFails(getDoc(doc(admin, 'digitalAssets/product-1')))
+  })
+
+  it('mantém reservas de horário privadas para visitante, usuário e admin', async () => {
+    await seed('mentoringSlots/slot-test', { sessionId: 'sess-test', status: 'held' })
+    const guest = testEnv.unauthenticatedContext().firestore()
+    const user = testEnv.authenticatedContext('user-a').firestore()
+    const admin = testEnv.authenticatedContext('admin-1').firestore()
+    await assertFails(getDoc(doc(guest, 'mentoringSlots/slot-test')))
+    await assertFails(getDoc(doc(user, 'mentoringSlots/slot-test')))
+    await assertFails(setDoc(doc(user, 'mentoringSlots/slot-test'), { status: 'released' }))
+    await assertFails(getDoc(doc(admin, 'mentoringSlots/slot-test')))
+  })
+})
+
+describe('mentoria e programas', () => {
+  const publishedMentor = {
+    name: 'Alexandre Gomes da Costa',
+    available: true,
+    status: 'published',
+  }
+
+  const draftMentor = {
+    name: 'Mentor Rascunho',
+    available: true,
+    status: 'draft',
+  }
+
+  const publishedProgram = {
+    title: 'Liderança Cristã',
+    status: 'published',
+    price: 599,
+  }
+
+  const draftProgram = {
+    title: 'Programa Em Desenvolvimento',
+    status: 'draft',
+    price: 399,
+  }
+
+  it('permite leitura pública de mentores e programas publicados', async () => {
+    await seed('mentors/mentor-1', publishedMentor)
+    await seed('mentoringPrograms/prog-1', publishedProgram)
+    const guest = testEnv.unauthenticatedContext().firestore()
+
+    await assertSucceeds(getDoc(doc(guest, 'mentors/mentor-1')))
+    await assertSucceeds(getDoc(doc(guest, 'mentoringPrograms/prog-1')))
+  })
+
+  it('impede visitante ou usuário comum de ler mentores e programas em rascunho', async () => {
+    await seed('mentors/mentor-draft', draftMentor)
+    await seed('mentoringPrograms/prog-draft', draftProgram)
+    const guest = testEnv.unauthenticatedContext().firestore()
+    const user = testEnv.authenticatedContext('user-a').firestore()
+
+    await assertFails(getDoc(doc(guest, 'mentors/mentor-draft')))
+    await assertFails(getDoc(doc(guest, 'mentoringPrograms/prog-draft')))
+    await assertFails(getDoc(doc(user, 'mentors/mentor-draft')))
+    await assertFails(getDoc(doc(user, 'mentoringPrograms/prog-draft')))
+  })
+
+  it('permite admin criar, editar e ler rascunhos de mentores e programas', async () => {
+    await seed('users/admin-1', baseUser('admin-1', 'admin'))
+    await seed('mentors/mentor-draft', draftMentor)
+    const admin = testEnv.authenticatedContext('admin-1').firestore()
+
+    await assertSucceeds(getDoc(doc(admin, 'mentors/mentor-draft')))
+    await assertSucceeds(setDoc(doc(admin, 'mentors/mentor-new'), publishedMentor))
+    await assertSucceeds(updateDoc(doc(admin, 'mentors/mentor-draft'), { status: 'published' }))
+    await assertSucceeds(setDoc(doc(admin, 'mentoringPrograms/prog-new'), publishedProgram))
+  })
+
+  it('impede exclusão física de mentor mesmo por admin', async () => {
+    await seed('users/admin-1', baseUser('admin-1', 'admin'))
+    await seed('mentors/mentor-1', publishedMentor)
+    const admin = testEnv.authenticatedContext('admin-1').firestore()
+
+    await assertFails(deleteDoc(doc(admin, 'mentors/mentor-1')))
+  })
+
+  it('restringe leitura de sessões ao próprio mentorado e ao admin', async () => {
+    await seed('users/admin-1', baseUser('admin-1', 'admin'))
+    await seed('mentoringSessions/sess-1', {
+      menteeId: 'user-a',
+      mentorId: 'mentor-1',
+      status: 'scheduled',
+    })
+
+    const owner = testEnv.authenticatedContext('user-a').firestore()
+    const anotherUser = testEnv.authenticatedContext('user-b').firestore()
+    const admin = testEnv.authenticatedContext('admin-1').firestore()
+
+    await assertSucceeds(getDoc(doc(owner, 'mentoringSessions/sess-1')))
+    await assertFails(getDoc(doc(anotherUser, 'mentoringSessions/sess-1')))
+    await assertSucceeds(getDoc(doc(admin, 'mentoringSessions/sess-1')))
+    await assertFails(updateDoc(doc(admin, 'mentoringSessions/sess-1'), { paymentStatus: 'CHECKOUT_PAID' }))
+    await assertSucceeds(updateDoc(doc(admin, 'mentoringSessions/sess-1'), { status: 'completed' }))
+  })
+
+  it('permite uma avaliação por sessão concluída e impede falsificação', async () => {
+    await seed('mentoringSessions/sess-1', {
+      menteeId: 'user-a', mentorId: 'mentor-1', status: 'completed',
+    })
+    await seed('mentoringSessions/sess-pending', {
+      menteeId: 'user-a', mentorId: 'mentor-1', status: 'scheduled',
+    })
+    await seed('mentoringSessions/sess-2', {
+      menteeId: 'user-a', mentorId: 'mentor-1', status: 'completed',
+    })
+    await seed('mentoringSessions/sess-3', {
+      menteeId: 'user-a', mentorId: 'mentor-1', status: 'completed',
+    })
+    const user = testEnv.authenticatedContext('user-a').firestore()
+    const anotherUser = testEnv.authenticatedContext('user-b').firestore()
+    const review = {
+      sessionId: 'sess-1', mentorId: 'mentor-1', menteeId: 'user-a',
+      menteeName: 'Pessoa Fictícia', rating: 5, comment: 'Excelente sessão!',
+      createdAt: serverTimestamp(),
+    }
+
+    await assertSucceeds(
+      setDoc(doc(user, 'mentoringReviews/sess-1'), review),
+    )
+    await assertSucceeds(getDoc(doc(user, 'mentoringReviews/sess-1')))
+    await assertFails(getDoc(doc(testEnv.unauthenticatedContext().firestore(), 'mentoringReviews/sess-1')))
+    await assertFails(getDoc(doc(anotherUser, 'mentoringReviews/sess-1')))
+    await assertFails(setDoc(doc(user, 'mentoringReviews/sess-1'), { ...review, rating: 1 }))
+    await assertFails(setDoc(doc(user, 'mentoringReviews/rev-2'), review))
+    await assertFails(setDoc(doc(anotherUser, 'mentoringReviews/sess-2'), { ...review, sessionId: 'sess-2', menteeId: 'user-b' }))
+    await assertFails(setDoc(doc(user, 'mentoringReviews/sess-pending'), { ...review, sessionId: 'sess-pending' }))
+    await assertFails(setDoc(doc(user, 'mentoringReviews/sess-3'), { ...review, sessionId: 'sess-3', rating: 100 }))
   })
 })

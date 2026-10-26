@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
 import { CartProvider } from '../context/CartContext'
+import { ToastProvider } from '../context/ToastContext'
 import AppLayout from '../layouts/AppLayout'
 import Home from '../pages/Home'
 import Kids from '../pages/Kids'
@@ -48,7 +49,8 @@ function NotFound() {
 export default function App() {
   return (
     <BrowserRouter>
-      <CartProvider>
+      <ToastProvider>
+        <CartProvider>
         <Routes>
           <Route element={<AuthProvider><AppLayout /></AuthProvider>}>
             <Route path="/" element={<Home />} />
@@ -180,6 +182,7 @@ export default function App() {
           </Route>
         </Routes>
       </CartProvider>
-    </BrowserRouter>
+    </ToastProvider>
+  </BrowserRouter>
   )
 }

@@ -1,91 +1,29 @@
-import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { ChevronRight, ChevronLeft, Clock, Calendar, Star, CheckCircle2, ArrowRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom'
+import {
+  ChevronRight,
+  ChevronLeft,
+  Clock,
+  Calendar,
+  Star,
+  CheckCircle2,
+  ArrowRight,
+  Loader2,
+} from 'lucide-react'
 import { TRILHA_LABELS, TRILHA_ICONS, type Mentor } from '../../types/mentoring'
+import { getMentorById } from '../../services/mentoring'
 
-const MENTORES_MOCK: Record<string, Mentor> = {
-  '1': {
-    id: '1',
-    name: 'Pr. Alexandre Gosta',
-    photo: '/alexandre-gomes-costa.jpg',
-    bio: 'Pastor e mentor com mais de 15 anos de experiência.',
-    specialty: 'Liderança e Propósito',
-    trilhas: ['lideranca', 'espiritual'],
-    rating: 4.9,
-    reviewCount: 95,
-    sessionCount: 120,
-    available: true,
-    createdAt: '2026-01-15',
-  },
-  '2': {
-    id: '2',
-    name: 'Ana Beatriz Santos',
-    photo: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Psicóloga e mentora familiar.',
-    specialty: 'Família e Casamento',
-    trilhas: ['familia', 'kids'],
-    rating: 4.8,
-    reviewCount: 78,
-    sessionCount: 95,
-    available: true,
-    createdAt: '2026-02-01',
-  },
-  '3': {
-    id: '3',
-    name: 'Carlos Eduardo Lima',
-    photo: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Empresário e consultor financeiro.',
-    specialty: 'Finanças e Generosidade',
-    trilhas: ['financas', 'lideranca'],
-    rating: 4.9,
-    reviewCount: 62,
-    sessionCount: 80,
-    available: true,
-    createdAt: '2026-01-20',
-  },
-  '4': {
-    id: '4',
-    name: 'Maria Clara Oliveira',
-    photo: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Coach certificada e mentora de vida espiritual.',
-    specialty: 'Vida Espiritual',
-    trilhas: ['espiritual', 'familia'],
-    rating: 4.7,
-    reviewCount: 54,
-    sessionCount: 70,
-    available: true,
-    createdAt: '2026-03-01',
-  },
-  '5': {
-    id: '5',
-    name: 'João Pedro Mendes',
-    photo: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Líder juvenil e mentor de jovens adultos.',
-    specialty: 'Propósito e Juventude',
-    trilhas: ['lideranca', 'espiritual'],
-    rating: 4.8,
-    reviewCount: 41,
-    sessionCount: 55,
-    available: true,
-    createdAt: '2026-02-15',
-  },
-  '6': {
-    id: '6',
-    name: 'Fernanda Costa',
-    photo: 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    bio: 'Especialista em educação cristã infantil.',
-    specialty: 'Alvorecer Kids',
-    trilhas: ['kids', 'familia'],
-    rating: 4.9,
-    reviewCount: 38,
-    sessionCount: 60,
-    available: true,
-    createdAt: '2026-03-10',
-  },
-}
-
-const HORARIOS = [
-  '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '19:00', '20:00',
+const HORARIOS_PADRAO = [
+  '08:00',
+  '09:00',
+  '10:00',
+  '11:00',
+  '14:00',
+  '15:00',
+  '16:00',
+  '17:00',
+  '19:00',
+  '20:00',
 ]
 
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -100,7 +38,12 @@ function getFirstDayOfMonth(year: number, month: number) {
 
 export default function MentoringSchedule() {
   const { id } = useParams<{ id: string }>()
-  const mentor = MENTORES_MOCK[id || '']
+  const [searchParams] = useSearchParams()
+  const programId = searchParams.get('programId')
+  const navigate = useNavigate()
+
+  const [mentor, setMentor] = useState<Mentor | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const today = new Date()
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
@@ -109,13 +52,44 @@ export default function MentoringSchedule() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [selectedTrilha, setSelectedTrilha] = useState<string | null>(null)
 
+  useEffect(() => {
+    async function carregar() {
+      if (!id) return
+      try {
+        setLoading(true)
+        const data = await getMentorById(id)
+        setMentor(data)
+        if (data?.trilhas?.length) {
+          setSelectedTrilha(data.trilhas[0])
+        }
+      } catch (err) {
+        console.error('Erro ao carregar mentor para agendamento:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    carregar()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 p-8 text-slate-500">
+        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+        <p className="text-sm font-medium">Carregando horários do mentor...</p>
+      </div>
+    )
+  }
+
   if (!mentor) {
     return (
-      <div className="min-h-[60vh] grid place-items-center p-8 text-center">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Mentor não encontrado</h1>
-          <p className="text-slate-500 mb-6">O mentor que você procura não existe.</p>
-          <Link to="/mentoria/catalogo" className="text-alvorecer-gold font-semibold hover:underline">
+      <div className="min-h-[60vh] grid place-items-center p-8 text-center bg-slate-50">
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 max-w-md shadow-sm">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Mentor não encontrado</h1>
+          <p className="text-slate-500 mb-6 text-sm">O mentor selecionado não foi encontrado ou não está disponível.</p>
+          <Link
+            to="/mentoria/catalogo"
+            className="inline-block bg-amber-500 text-slate-950 font-bold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-all text-sm"
+          >
             Voltar ao catálogo
           </Link>
         </div>
@@ -165,7 +139,11 @@ export default function MentoringSchedule() {
 
   const isSelected = (day: number) => {
     if (!selectedDate) return false
-    return selectedDate.getDate() === day && selectedDate.getMonth() === currentMonth && selectedDate.getFullYear() === currentYear
+    return (
+      selectedDate.getDate() === day &&
+      selectedDate.getMonth() === currentMonth &&
+      selectedDate.getFullYear() === currentYear
+    )
   }
 
   const formatSelectedDate = () => {
@@ -182,11 +160,20 @@ export default function MentoringSchedule() {
 
   const handleProceed = () => {
     if (!canProceed) return
-    const dateStr = selectedDate!.toISOString().split('T')[0]
-    window.location.href = `/mentoria/checkout/${mentor.id}?date=${dateStr}&time=${selectedTime}&trilha=${selectedTrilha}`
+    const year = selectedDate!.getFullYear()
+    const month = String(selectedDate!.getMonth() + 1).padStart(2, '0')
+    const day = String(selectedDate!.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
+
+    let url = `/mentoria/checkout/${mentor.id}?date=${dateStr}&time=${selectedTime}&trilha=${selectedTrilha}`
+    if (programId) url += `&programId=${programId}`
+    navigate(url)
   }
 
-  const monthName = new Date(currentYear, currentMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const monthName = new Date(currentYear, currentMonth).toLocaleDateString('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  })
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -194,11 +181,17 @@ export default function MentoringSchedule() {
       <div className="bg-white border-b border-slate-200">
         <div className="mx-auto max-w-6xl px-4 py-4">
           <nav className="flex items-center gap-2 text-sm text-slate-500">
-            <Link to="/mentoria" className="hover:text-alvorecer-gold transition-colors">Mentoria</Link>
+            <Link to="/mentoria" className="hover:text-amber-600 transition-colors">
+              Mentoria
+            </Link>
             <ChevronRight className="h-4 w-4" />
-            <Link to="/mentoria/catalogo" className="hover:text-alvorecer-gold transition-colors">Catálogo</Link>
+            <Link to="/mentoria/catalogo" className="hover:text-amber-600 transition-colors">
+              Catálogo
+            </Link>
             <ChevronRight className="h-4 w-4" />
-            <Link to={`/mentoria/mentor/${mentor.id}`} className="hover:text-alvorecer-gold transition-colors">{mentor.name}</Link>
+            <Link to={`/mentoria/mentor/${mentor.id}`} className="hover:text-amber-600 transition-colors">
+              {mentor.name}
+            </Link>
             <ChevronRight className="h-4 w-4" />
             <span className="text-slate-900 font-medium">Agendar</span>
           </nav>
@@ -207,36 +200,44 @@ export default function MentoringSchedule() {
 
       <div className="mx-auto max-w-6xl px-4 py-12">
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Calendar & Time Selection */}
-          <div className="lg:col-span-2 space-y-6">
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Agende sua sessão</h1>
-            <p className="text-slate-500">Escolha a trilha, o dia e o horário que melhor funcionam para você.</p>
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Mentor Info */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center gap-4 shadow-sm">
+              <img
+                src={mentor.photo || '/alexandre-gomes-costa.jpg'}
+                alt={mentor.name}
+                className="w-16 h-16 rounded-full object-cover border border-slate-200"
+              />
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">{mentor.name}</h2>
+                <p className="text-amber-700 font-medium text-sm">{mentor.specialty}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <Star className="h-4 w-4 text-amber-500 fill-current" />
+                  <span className="text-sm font-semibold text-slate-700">{mentor.rating ?? 5.0}</span>
+                  <span className="text-xs text-slate-400">({mentor.reviewCount ?? 0} avaliações)</span>
+                </div>
+              </div>
+            </div>
 
             {/* Trilha Selection */}
-            <div className="card p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <span className="text-xl">📚</span> 1. Escolha a trilha
-              </h2>
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">1. Escolha a Trilha de Foco</h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 {mentor.trilhas.map((t) => (
                   <button
                     key={t}
                     onClick={() => setSelectedTrilha(t)}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                    className={`p-4 rounded-xl border text-left transition-all flex items-center gap-3 ${
                       selectedTrilha === t
-                        ? 'border-alvorecer-gold bg-alvorecer-gold/5'
+                        ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20'
                         : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{TRILHA_ICONS[t]}</span>
-                      <div>
-                        <div className="font-semibold text-slate-900 text-sm">{TRILHA_LABELS[t]}</div>
-                        <div className="text-xs text-slate-500">8 sessões • 50 min</div>
-                      </div>
-                      {selectedTrilha === t && (
-                        <CheckCircle2 className="h-5 w-5 text-alvorecer-gold ml-auto" />
-                      )}
+                    <span className="text-2xl">{TRILHA_ICONS[t]}</span>
+                    <div>
+                      <div className="font-semibold text-slate-900 text-sm">{TRILHA_LABELS[t]}</div>
+                      <div className="text-xs text-slate-500">Encontro de 50 min</div>
                     </div>
                   </button>
                 ))}
@@ -244,58 +245,62 @@ export default function MentoringSchedule() {
             </div>
 
             {/* Calendar */}
-            <div className="card p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-alvorecer-gold" /> 2. Escolha o dia
-              </h2>
-
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={handlePrevMonth}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  <ChevronLeft className="h-5 w-5 text-slate-600" />
-                </button>
-                <h3 className="font-semibold text-slate-900 capitalize">{monthName}</h3>
-                <button
-                  onClick={handleNextMonth}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  <ChevronRight className="h-5 w-5 text-slate-600" />
-                </button>
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-slate-900">2. Selecione a Data</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrevMonth}
+                    className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <span className="font-bold text-slate-900 capitalize text-sm min-w-32 text-center">
+                    {monthName}
+                  </span>
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {DIAS_SEMANA.map((dia) => (
-                  <div key={dia} className="text-center text-xs font-medium text-slate-400 py-2">
-                    {dia}
+              {/* Day headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+                {DIAS_SEMANA.map((day) => (
+                  <div key={day} className="text-xs font-bold text-slate-400 py-1">
+                    {day}
                   </div>
                 ))}
               </div>
 
+              {/* Day cells */}
               <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: firstDay }).map((_, i) => (
-                  <div key={`empty-${i}`} />
+                {[...Array(firstDay)].map((_, i) => (
+                  <div key={`empty-${i}`} className="aspect-square" />
                 ))}
-                {Array.from({ length: daysInMonth }).map((_, i) => {
+
+                {[...Array(daysInMonth)].map((_, i) => {
                   const day = i + 1
                   const past = isDatePast(day)
-                  const today标记 = isToday(day)
+                  const todayFlag = isToday(day)
                   const selected = isSelected(day)
 
                   return (
                     <button
                       key={day}
-                      onClick={() => handleDateClick(day)}
                       disabled={past}
-                      className={`aspect-square rounded-xl text-sm font-medium transition-all ${
+                      onClick={() => handleDateClick(day)}
+                      className={`aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-medium transition-all relative ${
                         past
                           ? 'text-slate-300 cursor-not-allowed'
                           : selected
-                          ? 'bg-alvorecer-gold text-slate-900 shadow-md'
-                          : today标记
-                          ? 'bg-alvorecer-gold/10 text-alvorecer-gold font-bold'
-                          : 'text-slate-700 hover:bg-slate-100'
+                            ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                            : todayFlag
+                              ? 'border-2 border-amber-500 text-amber-900 hover:bg-amber-50 font-bold'
+                              : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
                       {day}
@@ -305,27 +310,24 @@ export default function MentoringSchedule() {
               </div>
             </div>
 
-            {/* Time Selection */}
+            {/* Time Slots */}
             {selectedDate && (
-              <div className="card p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-alvorecer-gold" /> 3. Escolha o horário
-                </h2>
-                <p className="text-sm text-slate-500 mb-4">
-                  Horários disponíveis para <span className="font-medium text-slate-700">{formatSelectedDate()}</span>
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {HORARIOS.map((hora) => (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-900 mb-2">3. Selecione o Horário</h3>
+                <p className="text-sm text-slate-500 mb-4 capitalize">{formatSelectedDate()}</p>
+
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                  {HORARIOS_PADRAO.map((time) => (
                     <button
-                      key={hora}
-                      onClick={() => setSelectedTime(hora)}
-                      className={`p-3 rounded-xl border-2 text-center font-medium transition-all ${
-                        selectedTime === hora
-                          ? 'border-alvorecer-gold bg-alvorecer-gold/5 text-alvorecer-gold'
-                          : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                      key={time}
+                      onClick={() => setSelectedTime(time)}
+                      className={`py-3 px-2 rounded-xl text-sm font-semibold border transition-all text-center ${
+                        selectedTime === time
+                          ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm font-bold'
+                          : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
                       }`}
                     >
-                      {hora}
+                      {time}
                     </button>
                   ))}
                 </div>
@@ -333,63 +335,56 @@ export default function MentoringSchedule() {
             )}
           </div>
 
-          {/* Sidebar - Mentor & Summary */}
+          {/* Summary Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24 space-y-6">
-              {/* Mentor Card */}
-              <div className="card p-6">
-                <div className="flex items-center gap-4 mb-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sticky top-24 shadow-sm">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">Resumo do Agendamento</h3>
+
+              <div className="space-y-4 text-sm">
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
                   <img
-                    src={mentor.photo}
+                    src={mentor.photo || '/alexandre-gomes-costa.jpg'}
                     alt={mentor.name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-alvorecer-gold"
+                    className="w-12 h-12 rounded-full object-cover border border-slate-200"
                   />
                   <div>
-                    <h3 className="font-bold text-slate-900">{mentor.name}</h3>
-                    <p className="text-sm text-alvorecer-gold">{mentor.specialty}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="h-3 w-3 text-alvorecer-gold fill-current" />
-                      <span className="text-xs text-slate-500">{mentor.rating} ({mentor.reviewCount})</span>
-                    </div>
+                    <div className="font-bold text-slate-900">{mentor.name}</div>
+                    <div className="text-xs text-amber-700">{mentor.specialty}</div>
                   </div>
                 </div>
-              </div>
 
-              {/* Summary */}
-              <div className="card p-6">
-                <h3 className="font-bold text-slate-900 mb-4">Resumo do Agendamento</h3>
-                <div className="space-y-3 text-sm">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{selectedTrilha ? TRILHA_ICONS[selectedTrilha as keyof typeof TRILHA_ICONS] : '📚'}</span>
+                    <CheckCircle2 className="h-4 w-4 text-amber-600" />
                     <span className={selectedTrilha ? 'text-slate-700 font-medium' : 'text-slate-400'}>
                       {selectedTrilha ? TRILHA_LABELS[selectedTrilha as keyof typeof TRILHA_LABELS] : 'Selecione a trilha'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-slate-400" />
+                    <Calendar className="h-4 w-4 text-amber-600" />
                     <span className={selectedDate ? 'text-slate-700 font-medium' : 'text-slate-400'}>
                       {selectedDate ? formatSelectedDate() : 'Selecione o dia'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-slate-400" />
+                    <Clock className="h-4 w-4 text-amber-600" />
                     <span className={selectedTime ? 'text-slate-700 font-medium' : 'text-slate-400'}>
-                      {selectedTime || 'Selecione o horário'}
+                      {selectedTime ? `${selectedTime} (50 min)` : 'Selecione o horário'}
                     </span>
                   </div>
                 </div>
 
                 <div className="border-t border-slate-100 mt-4 pt-4">
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-slate-600">Sessão individual (50 min)</span>
-                    <span className="font-bold text-slate-900">R$ 99,00</span>
+                    <span className="text-slate-600 font-medium">Sessão individual</span>
+                    <span className="font-extrabold text-slate-900 text-lg">R$ 99,00</span>
                   </div>
                 </div>
 
                 <button
                   onClick={handleProceed}
                   disabled={!canProceed}
-                  className="w-full bg-alvorecer-gold text-slate-900 py-3 rounded-xl font-bold hover:bg-alvorecer-gold/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-amber-500 text-slate-950 py-3 rounded-xl font-bold hover:bg-amber-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                 >
                   Continuar para Pagamento <ArrowRight className="h-5 w-5" />
                 </button>

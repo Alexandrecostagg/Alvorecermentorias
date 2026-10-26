@@ -50,7 +50,16 @@ service cloud.firestore {
       allow read: if signedIn()
         && (resource.data.userId == request.auth.uid || isAdmin());
 
-      allow update: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'updatedAt', 'processingAt', 'deliveredAt', 'shipment'
+        ])
+        && (
+          (resource.data.status == 'paid' && request.resource.data.status == 'processing')
+          || (resource.data.status == 'processing' && request.resource.data.status == 'shipping')
+          || (resource.data.status == 'shipping' && request.resource.data.status == 'delivered')
+          || (resource.data.status == 'shipping' && request.resource.data.status == 'shipping')
+        );
       allow delete: if false;
     }
 
@@ -62,6 +71,63 @@ service cloud.firestore {
 
     match /digitalEntitlements/{entitlementId} {
       allow read, write: if false;
+    }
+
+    match /mentors/{mentorId} {
+      allow read: if (resource.data.available == true && resource.data.status == 'published') || isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /mentoringPrograms/{programId} {
+      allow read: if resource.data.status == 'published' || isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /mentoringSessions/{sessionId} {
+      allow create: if false;
+      allow read: if signedIn()
+        && (resource.data.menteeId == request.auth.uid || isAdmin());
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'updatedAt', 'notes'
+        ])
+        && resource.data.status == 'scheduled'
+        && request.resource.data.status in ['completed', 'cancelled', 'no-show'];
+      allow delete: if false;
+    }
+
+    // A reserva de horário é criada e alterada somente pelo Worker.
+    match /mentoringSlots/{slotId} {
+      allow read, write: if false;
+    }
+
+    match /mentoringReviews/{reviewId} {
+      allow read: if signedIn()
+        && (resource.data.menteeId == request.auth.uid || isAdmin());
+      allow create: if signedIn()
+        && reviewId == request.resource.data.sessionId
+        && request.resource.data.keys().hasAll([
+          'sessionId', 'mentorId', 'menteeId', 'menteeName', 'rating', 'comment', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'sessionId', 'mentorId', 'menteeId', 'menteeName', 'rating', 'comment', 'createdAt'
+        ])
+        && request.resource.data.menteeId == request.auth.uid
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() <= 2000
+        && request.resource.data.menteeName is string
+        && request.resource.data.menteeName.size() <= 100
+        && request.resource.data.createdAt == request.time
+        && exists(/databases/$(database)/documents/mentoringSessions/$(reviewId))
+        && get(/databases/$(database)/documents/mentoringSessions/$(reviewId)).data.menteeId == request.auth.uid
+        && get(/databases/$(database)/documents/mentoringSessions/$(reviewId)).data.mentorId == request.resource.data.mentorId
+        && get(/databases/$(database)/documents/mentoringSessions/$(reviewId)).data.status == 'completed';
+      allow update, delete: if false;
     }
 
     match /{document=**} {

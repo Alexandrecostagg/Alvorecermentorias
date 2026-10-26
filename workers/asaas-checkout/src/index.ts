@@ -67,6 +67,11 @@ export default {
         return json(await createCheckout(request, env), 201, corsHeaders(request, env))
       }
 
+      if (request.method === 'POST' && url.pathname === '/mentoring-checkout') {
+        assertAllowedOrigin(request, env)
+        return json(await createMentoringCheckout(request, env), 201, corsHeaders(request, env))
+      }
+
       if (request.method === 'POST' && url.pathname === '/admin/digital-assets') {
         assertAllowedOrigin(request, env)
         return json(await uploadDigitalAsset(request, env), 201, corsHeaders(request, env))
@@ -172,6 +177,135 @@ async function createCheckout(request: Request, env: Env) {
   return { orderId, checkoutUrl: asaasCheckout.link }
 }
 
+async function createMentoringCheckout(request: Request, env: Env) {
+  ensureConfigured(env, [
+    'FIREBASE_WEB_API_KEY',
+    'FIREBASE_SERVICE_ACCOUNT_JSON',
+    'ASAAS_ACCESS_TOKEN',
+    'APP_ORIGIN',
+  ])
+
+  const payload = await request.json().catch(() => {
+    throw new HttpError(400, 'Corpo da requisição inválido.')
+  }) as {
+    mentorId?: unknown
+    programId?: unknown
+    date?: unknown
+    time?: unknown
+    billingType?: unknown
+  }
+
+  const mentorId = cleanText(payload.mentorId)
+  if (!mentorId) throw new HttpError(400, 'Informe o mentor para o agendamento.')
+
+  const date = cleanText(payload.date)
+  const time = cleanText(payload.time)
+  assertValidMentoringSlot(date, time)
+
+  const billingType = normalizeBillingType(payload.billingType)
+  const user = await verifyFirebaseUser(request, env)
+  const accessToken = await getGoogleAccessToken(env)
+
+  // Lê mentor no Firestore
+  const mentorDocument = await readFirestoreDocument('mentors', mentorId, env, accessToken)
+  const mentor = fromFirestoreFields(mentorDocument.fields || {}) as Record<string, unknown>
+  if (mentor.available !== true || mentor.status !== 'published') {
+    throw new HttpError(400, 'Este mentor não está disponível para novos agendamentos.')
+  }
+
+  const mentorName = String(mentor.name || 'Mentor')
+
+  // Se houver programId, busca o programa
+  const programId = cleanText(payload.programId)
+  let programTitle = `Sessão Individual com ${mentorName}`
+  let price = 99.0
+
+  if (programId) {
+    const progDocument = await readFirestoreDocument('mentoringPrograms', programId, env, accessToken)
+    const prog = fromFirestoreFields(progDocument.fields || {}) as Record<string, unknown>
+    assertBookableMentoringProgram(prog, mentorId)
+    price = prog.price as number
+    if (typeof prog.title === 'string') programTitle = prog.title
+  }
+
+  const profile = await loadUserProfile(user.uid, env, accessToken)
+  const customerData = buildAsaasCustomerData(user, profile)
+  const sessionId = `sess_${crypto.randomUUID()}`
+  const now = new Date().toISOString()
+  const slotId = await mentoringSlotId(mentorId, date, time)
+  await reserveMentoringSlot(slotId, { mentorId, date, time, sessionId }, env, accessToken)
+
+  try {
+    await createFirestoreDocument('mentoringSessions', sessionId, {
+      mentorId,
+      mentorName,
+      programId: programId || null,
+      programTitle,
+      menteeId: user.uid,
+      menteeEmail: user.email,
+      date,
+      time,
+      slotId,
+      duration: 50,
+      price: roundMoney(price),
+      status: 'pending_payment',
+      billingType,
+      createdAt: now,
+      updatedAt: now,
+    }, env, accessToken)
+  } catch (error) {
+    await releaseMentoringSlot(slotId, sessionId, env, accessToken)
+    throw error
+  }
+
+  let asaasCheckout: { id: string; link: string; status: string }
+  try {
+    asaasCheckout = await requestAsaasCheckout({
+      orderId: sessionId,
+      products: [{
+        quantity: 1,
+        product: {
+          id: programId || `mentoring_${mentorId}`,
+          title: programTitle,
+          price: roundMoney(price),
+          description: `Mentoria com ${mentorName} em ${date} às ${time}`,
+        },
+      }],
+      customerData,
+      billingType,
+    }, env)
+  } catch (error) {
+    await markCheckoutFailure(sessionId, env, accessToken)
+    await releaseMentoringSlot(slotId, sessionId, env, accessToken)
+    throw error
+  }
+
+  try {
+    await createFirestoreDocument('checkoutOrders', asaasCheckout.id, {
+      orderId: sessionId,
+      isMentoring: true,
+      createdAt: now,
+    }, env, accessToken)
+
+    await attachMentoringCheckoutToSlot(slotId, sessionId, asaasCheckout.id, env, accessToken)
+
+    await updateFirestoreDocument('mentoringSessions', sessionId, {
+      asaasCheckoutId: asaasCheckout.id,
+      asaasCheckoutUrl: asaasCheckout.link,
+      asaasCheckoutStatus: asaasCheckout.status,
+      updatedAt: now,
+    }, env, accessToken)
+  } catch {
+    console.error('Failed to associate Asaas checkout with mentoring session', sessionId)
+    await cancelAsaasCheckout(asaasCheckout.id, env)
+    await markCheckoutFailure(sessionId, env, accessToken)
+    await releaseMentoringSlot(slotId, sessionId, env, accessToken)
+    throw new HttpError(502, 'Não foi possível registrar o agendamento da mentoria com segurança.')
+  }
+
+  return { sessionId, checkoutUrl: asaasCheckout.link }
+}
+
 async function uploadDigitalAsset(request: Request, env: Env) {
   ensureConfigured(env, ['FIREBASE_WEB_API_KEY', 'FIREBASE_SERVICE_ACCOUNT_JSON'])
   if (!env.DIGITAL_ASSETS) throw new HttpError(500, 'O armazenamento digital ainda não foi configurado.')
@@ -191,6 +325,7 @@ async function uploadDigitalAsset(request: Request, env: Env) {
 
   const fileName = sanitizeDigitalFileName(file.name)
   const contentType = normalizeDigitalContentType(fileName, file.type)
+  await assertDigitalFileSignature(file, contentType)
   const resolvedProduct = await resolveCatalogProduct(productId, env, accessToken)
   const product = fromFirestoreFields(resolvedProduct.document.fields || {}) as Record<string, unknown>
   if (product.shippingRequired !== false) throw new HttpError(400, 'Marque o produto como digital e salve antes de enviar o arquivo.')
@@ -298,6 +433,7 @@ async function downloadDigitalAsset(request: Request, env: Env) {
       'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       'Cache-Control': 'private, no-store, max-age=0',
       'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer',
     },
   })
 }
@@ -363,6 +499,17 @@ async function receiveAsaasWebhook(request: Request, env: Env) {
     const existingEvent = await readFirestoreDocument('paymentEvents', eventId, env, accessToken)
     const existingData = fromFirestoreFields(existingEvent.fields || {}) as Record<string, unknown>
     if (existingData.processed === true) return { received: true, duplicate: true }
+  }
+
+  if (orderId.startsWith('sess_')) {
+    await applyMentoringPaymentTransition(orderId, eventId, event, transition, env, accessToken)
+
+    await updateFirestoreDocument('paymentEvents', eventId, {
+      processed: true,
+      processedAt: new Date().toISOString(),
+    }, env, accessToken)
+
+    return { received: true, mentoringSession: true }
   }
 
   const orderDocument = await readFirestoreDocument('orders', orderId, env, accessToken)
@@ -662,8 +809,8 @@ async function requestAsaasCheckout(
 
   const result = await response.json() as { id?: string; link?: string; status?: string; errors?: Array<{ description?: string }> }
   if (!response.ok || !result.id || !result.link) {
-    console.error('Asaas checkout error', response.status, result.errors?.[0]?.description)
-    throw new HttpError(502, result.errors?.[0]?.description || 'A Asaas não conseguiu criar o checkout.')
+    console.error('Asaas checkout error', response.status)
+    throw new HttpError(502, 'A Asaas não conseguiu criar o checkout.')
   }
 
   return { id: result.id, link: result.link, status: result.status || 'ACTIVE' }
@@ -689,7 +836,13 @@ async function cancelAsaasCheckout(checkoutId: string, env: Env) {
 
 async function markCheckoutFailure(orderId: string, env: Env, accessToken: string) {
   try {
-    await updateFirestoreDocument('orders', orderId, {
+    const collection = orderId.startsWith('sess_') ? 'mentoringSessions' : 'orders'
+    if (collection === 'mentoringSessions') {
+      const snapshot = await readFirestoreDocument(collection, orderId, env, accessToken)
+      const session = fromFirestoreFields(snapshot.fields || {}) as Record<string, unknown>
+      if (session.status === 'scheduled' || session.status === 'completed') return
+    }
+    await updateFirestoreDocument(collection, orderId, {
       status: 'cancelled',
       paymentStatus: 'checkout_failed',
       updatedAt: new Date().toISOString(),
@@ -736,7 +889,7 @@ async function readFirestoreDocument(collection: string, documentId: string, env
   const response = await fetch(firestoreDocumentUrl(collection, documentId, env), { headers: { Authorization: `Bearer ${accessToken}` } })
   if (response.status === 404) throw new HttpError(404, 'Documento não encontrado.')
   if (!response.ok) throw new Error('Não foi possível consultar o catálogo.')
-  return response.json() as Promise<{ fields?: Record<string, unknown> }>
+  return response.json() as Promise<{ fields?: Record<string, unknown>; updateTime?: string }>
 }
 
 async function tryReadFirestoreDocument(collection: string, documentId: string, env: Env, accessToken: string) {
@@ -774,6 +927,31 @@ async function updateFirestoreDocument(collection: string, documentId: string, d
     body: JSON.stringify({ fields: toFirestoreFields(data) }),
   })
   if (!response.ok) throw new Error('Não foi possível atualizar o pedido.')
+}
+
+async function compareAndSetFirestoreDocument(
+  collection: string,
+  documentId: string,
+  data: Record<string, unknown>,
+  updateTime: string | undefined,
+  env: Env,
+  accessToken: string,
+) {
+  if (!updateTime) throw new Error('Documento Firestore sem versão para atualização condicional.')
+  const name = firestoreDocumentUrl(collection, documentId, env).replace('https://firestore.googleapis.com/v1/', '')
+  const response = await fetch(`${firestoreDatabaseUrl(env)}/documents:commit`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ writes: [{
+      update: { name, fields: toFirestoreFields(data) },
+      updateMask: { fieldPaths: Object.keys(data) },
+      currentDocument: { updateTime },
+    }] }),
+  })
+  if (response.ok) return true
+  const failure = await response.json().catch(() => ({})) as { error?: { status?: string } }
+  if (response.status === 409 || response.status === 412 || failure.error?.status === 'FAILED_PRECONDITION') return false
+  throw new Error('Não foi possível atualizar a reserva no Firestore.')
 }
 
 async function setFirestoreDocument(collection: string, documentId: string, data: Record<string, unknown>, env: Env, accessToken: string) {
@@ -834,7 +1012,7 @@ function extractOrderId(payload: Record<string, unknown>) {
   const checkout = payload.checkout as Record<string, unknown> | undefined
   const payment = payload.payment as Record<string, unknown> | undefined
   const candidates = [payload.externalReference, checkout?.externalReference, payment?.externalReference]
-  return candidates.find((value): value is string => typeof value === 'string' && value.startsWith('order_'))
+  return candidates.find((value): value is string => typeof value === 'string' && (value.startsWith('order_') || value.startsWith('sess_')))
 }
 
 async function resolveOrderId(payload: Record<string, unknown>, env: Env, accessToken: string) {
@@ -848,7 +1026,7 @@ async function resolveOrderId(payload: Record<string, unknown>, env: Env, access
   const mapping = await tryReadFirestoreDocument('checkoutOrders', checkoutId, env, accessToken)
   if (!mapping) return undefined
   const data = fromFirestoreFields(mapping.fields || {}) as Record<string, unknown>
-  return typeof data.orderId === 'string' && data.orderId.startsWith('order_') ? data.orderId : undefined
+  return typeof data.orderId === 'string' && (data.orderId.startsWith('order_') || data.orderId.startsWith('sess_')) ? data.orderId : undefined
 }
 
 function paymentTransitionFromAsaasEvent(event: string): PaymentTransition | undefined {
@@ -869,6 +1047,206 @@ function resolveOrderStatusAfterPaymentEvent(currentStatus: unknown, transition:
   return typeof currentStatus === 'string' && operationalStatuses.includes(currentStatus)
     ? currentStatus
     : transition.orderStatus
+}
+
+function resolveMentoringStatusAfterPaymentEvent(currentStatus: unknown, transition: PaymentTransition) {
+  if (currentStatus === 'completed' || currentStatus === 'no-show') return currentStatus
+  if (currentStatus === 'payment_review' && transition.orderStatus === 'cancelled') return currentStatus
+  if (transition.orderStatus === 'cancelled' && currentStatus === 'scheduled') return currentStatus
+  return transition.orderStatus === 'paid' ? 'scheduled' : 'cancelled'
+}
+
+async function applyMentoringPaymentTransition(
+  sessionId: string,
+  eventId: string,
+  event: string,
+  transition: PaymentTransition,
+  env: Env,
+  accessToken: string,
+) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const snapshot = await readFirestoreDocument('mentoringSessions', sessionId, env, accessToken)
+    const session = fromFirestoreFields(snapshot.fields || {}) as Record<string, unknown>
+    let slotId = typeof session.slotId === 'string' ? session.slotId : ''
+    let slotResult: boolean | 'released' | 'confirmed' | 'other'
+    let migratedSlotId: string | undefined
+    if (!slotId && transition.orderStatus === 'paid') {
+      const mentorId = typeof session.mentorId === 'string' ? session.mentorId : ''
+      const date = typeof session.date === 'string' ? session.date : ''
+      const time = typeof session.time === 'string' ? session.time : ''
+      if (mentorId && date && time) {
+        slotId = await mentoringSlotId(mentorId, date, time)
+        slotResult = await confirmLegacyMentoringSlot(slotId, { mentorId, date, time, sessionId }, env, accessToken)
+        if (slotResult === true) migratedSlotId = slotId
+      } else {
+        slotResult = false
+      }
+    } else if (!slotId) {
+      slotResult = 'other'
+    } else {
+      slotResult = transition.orderStatus === 'paid'
+        ? await confirmMentoringSlot(slotId, sessionId, env, accessToken)
+        : await releaseMentoringSlot(slotId, sessionId, env, accessToken)
+    }
+    const sessionStatus = transition.orderStatus === 'paid'
+      ? (slotResult === true ? resolveMentoringStatusAfterPaymentEvent(session.status, transition) : 'payment_review')
+      : (slotResult === 'confirmed' ? resolveMentoringStatusAfterPaymentEvent('scheduled', transition)
+        : resolveMentoringStatusAfterPaymentEvent(session.status, transition))
+    const recordPaymentEvent = transition.orderStatus === 'paid'
+      || (slotResult !== 'confirmed' && sessionStatus !== session.status)
+    const written = await compareAndSetFirestoreDocument('mentoringSessions', sessionId, {
+      status: sessionStatus,
+      ...(migratedSlotId ? { slotId: migratedSlotId } : {}),
+      ...(recordPaymentEvent ? {
+        paymentStatus: event,
+        asaasCheckoutStatus: transition.checkoutStatus,
+        asaasEventId: eventId,
+      } : {}),
+      updatedAt: new Date().toISOString(),
+    }, snapshot.updateTime, env, accessToken)
+    if (written) return
+  }
+  throw new Error('Conflito ao processar o evento financeiro da sessão.')
+}
+
+async function confirmLegacyMentoringSlot(
+  slotId: string,
+  data: { mentorId: string; date: string; time: string; sessionId: string },
+  env: Env,
+  accessToken: string,
+) {
+  const now = new Date().toISOString()
+  if (await createFirestoreDocument('mentoringSlots', slotId, {
+    ...data,
+    status: 'confirmed',
+    checkoutId: null,
+    createdAt: now,
+    updatedAt: now,
+    confirmedAt: now,
+  }, env, accessToken, true)) return true
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const snapshot = await readFirestoreDocument('mentoringSlots', slotId, env, accessToken)
+    const slot = fromFirestoreFields(snapshot.fields || {}) as Record<string, unknown>
+    if (slot.sessionId === data.sessionId && slot.status === 'confirmed') return true
+    if (slot.sessionId === data.sessionId && slot.status === 'held') {
+      return confirmMentoringSlot(slotId, data.sessionId, env, accessToken)
+    }
+    if (slot.status !== 'released') return false
+    const written = await compareAndSetFirestoreDocument('mentoringSlots', slotId, {
+      ...data,
+      status: 'confirmed',
+      checkoutId: null,
+      confirmedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }, snapshot.updateTime, env, accessToken)
+    if (written) return true
+  }
+  throw new Error('Conflito ao migrar a reserva da sessão antiga.')
+}
+
+function assertValidMentoringSlot(date: string, time: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+    throw new HttpError(400, 'Informe uma data e um horário válidos.')
+  }
+  const [year, month, day] = date.split('-').map(Number)
+  if (new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10) !== date) {
+    throw new HttpError(400, 'Informe uma data válida.')
+  }
+  const start = new Date(`${date}T${time}:00-03:00`)
+  if (Number.isNaN(start.getTime()) || start.getTime() <= Date.now()) {
+    throw new HttpError(400, 'Escolha uma data e um horário futuros.')
+  }
+}
+
+function assertBookableMentoringProgram(program: Record<string, unknown>, mentorId: string) {
+  if (program.status !== 'published' || program.mentorId !== mentorId || typeof program.price !== 'number'
+    || !Number.isFinite(program.price) || program.price <= 0 || program.price > 100000) {
+    throw new HttpError(400, 'Este programa não está disponível para o mentor selecionado.')
+  }
+}
+
+async function mentoringSlotId(mentorId: string, date: string, time: string) {
+  const bytes = new TextEncoder().encode(JSON.stringify([mentorId, date, time]))
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))
+  return `slot_${Array.from(digest, byte => byte.toString(16).padStart(2, '0')).join('')}`
+}
+
+function canReclaimMentoringSlot(slot: Record<string, unknown>, now = Date.now()) {
+  if (slot.status === 'released') return true
+  // Uma cobrança criada precisa terminar por webhook antes de liberar a vaga.
+  return slot.status === 'held' && !slot.checkoutId
+    && typeof slot.expiresAt === 'string' && Date.parse(slot.expiresAt) <= now
+}
+
+async function reserveMentoringSlot(
+  slotId: string,
+  data: { mentorId: string; date: string; time: string; sessionId: string },
+  env: Env,
+  accessToken: string,
+) {
+  const now = new Date().toISOString()
+  const reservation = {
+    ...data,
+    status: 'held',
+    checkoutId: null,
+    expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+    updatedAt: now,
+  }
+  if (await createFirestoreDocument('mentoringSlots', slotId, { ...reservation, createdAt: now }, env, accessToken, true)) return
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const snapshot = await readFirestoreDocument('mentoringSlots', slotId, env, accessToken)
+    const previous = fromFirestoreFields(snapshot.fields || {}) as Record<string, unknown>
+    if (!canReclaimMentoringSlot(previous)) throw new HttpError(409, 'Este horário já está reservado. Escolha outro horário.')
+    if (await compareAndSetFirestoreDocument('mentoringSlots', slotId, reservation, snapshot.updateTime, env, accessToken)) return
+  }
+  throw new HttpError(409, 'Este horário acabou de ser reservado. Escolha outro horário.')
+}
+
+async function attachMentoringCheckoutToSlot(slotId: string, sessionId: string, checkoutId: string, env: Env, accessToken: string) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const snapshot = await readFirestoreDocument('mentoringSlots', slotId, env, accessToken)
+    const slot = fromFirestoreFields(snapshot.fields || {}) as Record<string, unknown>
+    if (slot.sessionId !== sessionId || slot.status === 'released') throw new Error('A reserva de horário não pertence mais a esta sessão.')
+    if (slot.status === 'confirmed') return
+    if (slot.status !== 'held' || (slot.checkoutId && slot.checkoutId !== checkoutId)) throw new Error('Reserva de horário inconsistente.')
+    if (await compareAndSetFirestoreDocument('mentoringSlots', slotId, {
+      checkoutId,
+      expiresAt: new Date(Date.now() + 65 * 60_000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    }, snapshot.updateTime, env, accessToken)) return
+  }
+  throw new Error('Não foi possível associar o checkout à reserva.')
+}
+
+async function confirmMentoringSlot(slotId: string, sessionId: string, env: Env, accessToken: string): Promise<boolean> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const snapshot = await readFirestoreDocument('mentoringSlots', slotId, env, accessToken)
+    const slot = fromFirestoreFields(snapshot.fields || {}) as Record<string, unknown>
+    if (slot.sessionId !== sessionId || slot.status === 'released') return false
+    if (slot.status === 'confirmed') return true
+    if (slot.status !== 'held') return false
+    if (await compareAndSetFirestoreDocument('mentoringSlots', slotId, {
+      status: 'confirmed', confirmedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }, snapshot.updateTime, env, accessToken)) return true
+  }
+  throw new Error('Conflito ao confirmar a reserva.')
+}
+
+async function releaseMentoringSlot(slotId: string, sessionId: string, env: Env, accessToken: string): Promise<'released' | 'confirmed' | 'other'> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const snapshot = await readFirestoreDocument('mentoringSlots', slotId, env, accessToken)
+    const slot = fromFirestoreFields(snapshot.fields || {}) as Record<string, unknown>
+    if (slot.sessionId !== sessionId) return 'other'
+    if (slot.status === 'confirmed') return 'confirmed'
+    if (slot.status === 'released') return 'released'
+    if (slot.status !== 'held') return 'other'
+    if (await compareAndSetFirestoreDocument('mentoringSlots', slotId, {
+      status: 'released', releasedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }, snapshot.updateTime, env, accessToken)) return 'released'
+  }
+  throw new Error('Conflito ao liberar a reserva.')
 }
 
 function toFirestoreFields(data: Record<string, unknown>) {
@@ -925,6 +1303,27 @@ function normalizeDigitalContentType(fileName: string, providedType: string) {
     throw new HttpError(400, 'O conteúdo do arquivo não corresponde a um EPUB.')
   }
   return 'application/epub+zip'
+}
+
+async function assertDigitalFileSignature(file: File, contentType: string) {
+  const header = new Uint8Array(await file.slice(0, 128).arrayBuffer())
+  const decoder = new TextDecoder()
+  if (contentType === 'application/pdf') {
+    if (decoder.decode(header.slice(0, 5)) !== '%PDF-') {
+      throw new HttpError(400, 'O arquivo enviado não possui assinatura PDF válida.')
+    }
+    return
+  }
+  // EPUB exige o arquivo mimetype como primeira entrada ZIP, sem compressão.
+  const view = new DataView(header.buffer)
+  const validZip = header.length >= 58 && view.getUint32(0, true) === 0x04034b50
+  const fileNameLength = validZip ? view.getUint16(26, true) : 0
+  const extraLength = validZip ? view.getUint16(28, true) : 0
+  const contentOffset = 30 + fileNameLength + extraLength
+  if (!validZip || view.getUint16(8, true) !== 0 || decoder.decode(header.slice(30, 30 + fileNameLength)) !== 'mimetype'
+    || decoder.decode(header.slice(contentOffset, contentOffset + 20)) !== 'application/epub+zip') {
+    throw new HttpError(400, 'O arquivo enviado não possui assinatura EPUB válida.')
+  }
 }
 
 async function signDownloadToken(payload: { entitlementId: string; userId: string; expiresAt: number }, secret: string) {
@@ -1030,21 +1429,32 @@ function corsResponse(request: Request, env: Env) {
 }
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
-  return new Response(JSON.stringify(body), { status, headers: { ...headers, 'Content-Type': 'application/json; charset=utf-8' } })
+  return new Response(JSON.stringify(body), { status, headers: {
+    ...headers,
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'private, no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+  } })
 }
 
 export const testables = {
+  assertBookableMentoringProgram,
   assertDigitalProductsReady,
+  assertDigitalFileSignature,
   assertPhysicalShippingIsQuoted,
+  assertValidMentoringSlot,
   buildAsaasCustomerData,
   buildOrderCustomer,
   extractOrderId,
   loadProducts,
+  mentoringSlotId,
   normalizeAddress,
   normalizeBillingType,
   normalizeItems,
   paymentTransitionFromAsaasEvent,
   resolveOrderStatusAfterPaymentEvent,
+  resolveMentoringStatusAfterPaymentEvent,
   requestAsaasCheckout,
   safeTokenEquals,
   sanitizeDigitalFileName,

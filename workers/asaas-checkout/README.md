@@ -68,6 +68,25 @@ O redirecionamento de retorno melhora a experiência do comprador, mas não
 confirma o pagamento. Somente `CHECKOUT_PAID`, recebido no webhook, altera o
 pedido para pago.
 
+## Reserva de horários da mentoria
+
+O Worker cria uma reserva exclusiva em `mentoringSlots` antes de solicitar um
+checkout. Uma segunda tentativa para o mesmo mentor, dia e horário recebe
+`409` e não cria outra cobrança. A coleção é privada nas regras do Firestore.
+
+Uma reserva sem checkout pode ser retomada depois de dez minutos, caso o
+processo tenha sido interrompido. Depois que um checkout é associado, a vaga
+só é liberada por falha explícita ou evento `CHECKOUT_CANCELED`/
+`CHECKOUT_EXPIRED`. Se o webhook terminal não chegar, a vaga permanece
+bloqueada e exige reconciliação operacional antes de ser ofertada novamente.
+Pagamento tardio de uma sessão cuja vaga mudou de dono fica em
+`payment_review` para análise e eventual estorno; não confirma duas sessões.
+
+Não use `wrangler.toml` como ambiente isolado de homologação: ele aponta para
+o Firebase e a origem públicos, e o bucket R2 de preview é o mesmo bucket
+configurado para produção. Separe projeto Firebase, Pages, Worker, R2, Asaas
+Sandbox, segredos e contas de teste antes de qualquer validação remota.
+
 ## Validação local
 
 Na raiz do projeto:
