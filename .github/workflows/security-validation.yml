@@ -1,0 +1,42 @@
+name: Security validation
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: security-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: "AIzaSyBElFixiBJQrHoGOsb9HKJh36hTQ4yHP50"
+          VITE_FIREBASE_AUTH_DOMAIN: "alvorecermentorias.firebaseapp.com"
+          VITE_FIREBASE_PROJECT_ID: "alvorecermentorias"
+          VITE_FIREBASE_MESSAGING_SENDER_ID: "23903019061"
+          VITE_FIREBASE_APP_ID: "1:23903019061:web:793c293a1e0dee0dee517c"
+          VITE_PUBLIC_MEDIA_BASE_URL: "https://pub-845ec24fd24241a09ec52e2e97c81366.r2.dev"
+          VITE_PAYMENT_API_BASE_URL: "https://alvorecermentorias-payments.alexandrecostagg.workers.dev"
+      - run: npm audit --audit-level=high
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Test with local Firestore emulator
+        run: |
+          node -e "require('fs').writeFileSync('/tmp/firebase-security-ci.json', JSON.stringify({firestore:{rules:process.cwd()+'/firestore.rules'},emulators:{firestore:{host:'127.0.0.1',port:8080},ui:{enabled:false},singleProjectMode:false}}))"
+          npx --yes --package=firebase-tools@15.16.0 firebase emulators:exec --project demo-alvorecer-security --config /tmp/firebase-security-ci.json --only firestore 'npx vitest run'
