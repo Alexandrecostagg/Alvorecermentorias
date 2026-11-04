@@ -23,6 +23,14 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: "AIzaSyBElFixiBJQrHoGOsb9HKJh36hTQ4yHP50"
+          VITE_FIREBASE_AUTH_DOMAIN: "alvorecermentorias.firebaseapp.com"
+          VITE_FIREBASE_PROJECT_ID: "alvorecermentorias"
+          VITE_FIREBASE_MESSAGING_SENDER_ID: "23903019061"
+          VITE_FIREBASE_APP_ID: "1:23903019061:web:793c293a1e0dee0dee517c"
+          VITE_PUBLIC_MEDIA_BASE_URL: "https://pub-845ec24fd24241a09ec52e2e97c81366.r2.dev"
+          VITE_PAYMENT_API_BASE_URL: "https://alvorecermentorias-payments.alexandrecostagg.workers.dev"
       - run: npm audit --audit-level=high
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
