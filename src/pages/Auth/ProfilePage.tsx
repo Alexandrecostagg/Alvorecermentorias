@@ -1,3 +1,5 @@
+import { PasskeyPanel } from '../../security/PasskeyPanel'
+import { passkeys } from '../../security/passkeys'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -188,6 +190,7 @@ export default function ProfilePage() {
                             </button>
                         </div>
                     </form>
+                <PasskeyPanel client={passkeys} userId={user?.uid} />
                 </div>
             </div>
         </div>

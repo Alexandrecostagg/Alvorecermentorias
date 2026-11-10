@@ -1,4 +1,11 @@
+import { firebasePasskeyRoute } from './security/firebase.mjs';
+import { withBrowserPolicy, CSP_REPORT_ONLY } from './security/browser-policy.mjs';
+export { PasskeyState } from './security/durable-store.mjs';
 interface Env {
+  PASSKEY_ENABLED?: string;
+  PASSKEY_STATE?: DurableObjectNamespace;
+  PASSKEY_RP_ID?: string;
+  PASSKEY_ORIGINS?: string;
   APP_ORIGIN: string
   FIREBASE_PROJECT_ID: string
   FIREBASE_WEB_API_KEY: string
@@ -58,6 +65,13 @@ class HttpError extends Error {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
+
+    if (url.pathname.startsWith('/auth/passkeys/')) {
+      return withBrowserPolicy(await firebasePasskeyRoute(request, env, {
+        projectId: env.FIREBASE_PROJECT_ID,
+        credential: env.FIREBASE_SERVICE_ACCOUNT_JSON,
+      }))
+    }
 
     if (request.method === 'OPTIONS') return corsResponse(request, env)
 
@@ -434,6 +448,7 @@ async function downloadDigitalAsset(request: Request, env: Env) {
       'Cache-Control': 'private, no-store, max-age=0',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy-Report-Only': CSP_REPORT_ONLY,
     },
   })
 }
