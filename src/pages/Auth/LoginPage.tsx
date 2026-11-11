@@ -1,3 +1,5 @@
+import { PasskeyPanel } from '../../security/PasskeyPanel'
+import { passkeys } from '../../security/passkeys'
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -278,6 +280,7 @@ export default function LoginPage() {
                         {isRegistering ? 'Cadastrar' : 'Entrar'}
                     </button>
                 </form>
+                <PasskeyPanel client={passkeys} />
 
                 <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
